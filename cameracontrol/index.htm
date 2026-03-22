@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PTZ Preset Controller</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- HLS.js for browsers that need it -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+    body {
+        margin: 0;
+        font-family: sans-serif;
+        background: #f5f5f5;
+    }
+
+    header {
+        background: #0078d4;
+        color: white;
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .header-left h2 {
+        margin: 0;
+    }
+
+    .header-right {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .layout {
+        display: flex;
+        height: calc(100vh - 60px);
+    }
+
+    .preview {
+        flex: 0 0 40%;
+        background: black;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .preview img,
+    .preview video {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+    }
+
+    .presets {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .preset {
+        background: white;
+        padding: 10px 12px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        border: 2px solid transparent;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        transition: border 0.15s, box-shadow 0.15s, transform 0.05s;
+    }
+
+    .preset:hover {
+        border-color: #0078d4;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        transform: translateY(-1px);
+    }
+
+    .preset img {
+        width: 100%;
+        border-radius: 6px;
+    }
+
+    .preset-label {
+        font-size: 15px;
+        font-weight: 600;
+        text-align: left;
+    }
+
+    button {
+        padding: 8px 12px;
+        font-size: 14px;
+        border: none;
+        border-radius: 6px;
+        background: #0078d4;
+        color: white;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    button:hover {
+        background: #005fa3;
+    }
+
+    /* Thumbnail toggle */
+    body.hide-thumbs .preset img {
+        display: none;
+    }
+
+    @media (max-width: 900px) and (orientation: landscape) {
+        .presets {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .preview {
+            flex: 0 0 35%;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .layout {
+            flex-direction: column;
+        }
+        .preview {
+            flex: 0 0 auto;
+            height: 35vh;
+        }
+        .presets {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <h2>Camera Presets</h2>
+    </div>
+    <div class="header-right">
+        <button onclick="switchToMJPEG()">MJPEG</button>
+        <button onclick="switchToHLS()">HLS w/ 🔉</button>
+        <button onclick="toggleThumbnails()">Thumbnails</button>
+	<button onclick="requestWakeLock()">Keep Awake</button>
+    </div>
+</header>
+
+<div class="layout">
+    <div class="preview">
+        <img id="liveFeed" style="display:block;">
+	<video id="liveFeedVideo"
+	       controls
+	       playsinline
+	       webkit-playsinline
+	       autoplay muted
+	       style="display:none; width:100%; height:auto;">
+	</video>
+
+    </div>
+
+    <div class="presets" id="presetGrid"></div>
+</div>
+
+<script>
+// ------------------------------------------------------------
+// CONFIGURATION
+// ------------------------------------------------------------
+
+// All camera access is proxied through this server.
+// Apache (see sites-enabled/000-default.conf):
+//   ProxyPass        /mjpeg  http://CAMERA_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+//   ProxyPassReverse /mjpeg  http://CAMERA_IP/cgi-bin/mjpeg
+//   ProxyPass        /hls/   http://ENCODER_IP:PORT/
+//   ProxyPassReverse /hls/   http://ENCODER_IP:PORT/
+//   ProxyPass        /cam/ptz http://CAMERA_IP/cgi-bin/aw_ptz
+//   ProxyPassReverse /cam/ptz http://CAMERA_IP/cgi-bin/aw_ptz
+
+// Wake Lock
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+
+    wakeLock.addEventListener("release", () => {
+      console.log("Wake Lock was released");
+    });
+
+    console.log("Wake Lock is active");
+  } catch (err) {
+    console.error(`${err.name}, ${err.message}`);
+  }
+}
+
+// Re-request if the tab becomes visible again
+document.addEventListener("visibilitychange", () => {
+  if (wakeLock !== null && document.visibilityState === "visible") {
+    requestWakeLock();
+  }
+});
+
+
+const LIVE_URL = "/mjpeg";            // proxied MJPEG
+const HLS_URL  = "/hls/2.m3u8";  // proxied HLS
+
+const PRESETS = [
+    { number: 1,  label: "Full zoom out",                     image: "images/preset1.jpg" },
+    { number: 2,  label: "Slightly zoomed in",                image: "images/preset2.jpg" },
+    { number: 3,  label: "Standard view",                     image: "images/preset3.jpg" },
+    { number: 4,  label: "Lectern (Homily)",                  image: "images/preset4.jpg" },
+    { number: 5,  label: "Up close Altar",                    image: "images/preset5.jpg" },
+    { number: 6,  label: "Icon above doors",                  image: "images/preset6.jpg" },
+    { number: 7,  label: "Baptismal font",                    image: "images/preset7.jpg" },
+    { number: 8,  label: "Choir loft",                        image: "images/none.jpg" },
+    { number: 9,  label: "Center aisle",                      image: "images/preset9.jpg" },
+    { number: 10, label: "Low announcements",                 image: "images/preset10.jpg" },
+    { number: 11, label: "Michael to canter",                 image: "images/preset11.jpg" },
+    { number: 12, label: "Closing announcements",             image: "images/preset12.jpg" },
+    { number: 13, label: "Memorial service",                  image: "images/preset13.jpg" },
+    { number: 14, label: "Choir Loft 2",                      image: "images/none.jpg" },
+    { number: 15, label: "Chanter",                           image: "images/preset15.jpg" },
+    { number: 16, label: "Saint Demetrios",                   image: "images/preset16.jpg" },
+    { number: 17, label: "Lectern to Gabriel",                image: "images/preset17.jpg" },
+    { number: 18, label: "Left Aisle",                        image: "images/preset18.jpg" },
+    { number: 19, label: "Right Aisle",                       image: "images/preset19.jpg" },
+    { number: 20, label: "Low center icon on easel",          image: "images/preset20.jpg" },
+    { number: 21, label: "Choir Loft 3 (canter side)",        image: "images/none.jpg" },
+    { number: 22, label: "Choir Loft 4 (forward - Pascha)",   image: "images/preset22.jpg" }
+];
+
+// ------------------------------------------------------------
+// BUILD PRESET GRID
+// ------------------------------------------------------------
+const grid = document.getElementById("presetGrid");
+
+PRESETS.forEach(preset => {
+    const div = document.createElement("div");
+    div.className = "preset";
+    div.onclick = function() { goToPreset(preset.number, this); };
+
+    const img = document.createElement("img");
+    img.src = preset.image;
+
+    const label = document.createElement("div");
+    label.className = "preset-label";
+    label.textContent = `${preset.number} — ${preset.label}`;
+
+    div.appendChild(img);
+    div.appendChild(label);
+    grid.appendChild(div);
+});
+
+// ------------------------------------------------------------
+// SEND PRESET COMMAND (proxied PTZ)
+// ------------------------------------------------------------
+function goToPreset(num, btn) {
+    const index = num - 1;
+    const cmd = index.toString().padStart(2, "0");
+    const url = `/cam/ptz?cmd=%23R${cmd}&res=1`;
+
+    fetch(url).then(r => {
+        if (!r.ok) throw new Error(r.status);
+    }).catch(() => {
+        if (btn) {
+            btn.style.outline = '2px solid #d64045';
+            setTimeout(() => { btn.style.outline = ''; }, 1000);
+        }
+    });
+}
+
+// ------------------------------------------------------------
+// MJPEG / HLS TOGGLE
+// ------------------------------------------------------------
+function switchToMJPEG() {
+    const img = document.getElementById("liveFeed");
+    const video = document.getElementById("liveFeedVideo");
+
+    video.pause();
+    video.style.display = "none";
+
+    img.style.display = "block";
+    img.src = LIVE_URL + "?t=" + Date.now(); // cache-bust to force reconnect
+}
+
+function switchToHLS() {
+    const img = document.getElementById("liveFeed");
+    const video = document.getElementById("liveFeedVideo");
+
+    img.style.display = "none";
+    video.style.display = "block";
+
+    if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(HLS_URL);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+    } else {
+        video.src = HLS_URL;
+        video.play();
+    }
+}
+
+// ------------------------------------------------------------
+// THUMBNAIL TOGGLE
+// ------------------------------------------------------------
+function toggleThumbnails() {
+    document.body.classList.toggle("hide-thumbs");
+}
+
+// Start in MJPEG mode
+switchToMJPEG();
+</script>
+
+</body>
+</html>
+

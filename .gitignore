@@ -1,0 +1,9 @@
+# Site-specific Apache config (contains real IPs)
+sites-enabled/000-default.conf
+
+# Site-specific camera IPs
+multicamera/config/cameras.json
+
+# Camera preset images (site-specific photos)
+cameracontrol/images/
+multicamera/thumbnails/

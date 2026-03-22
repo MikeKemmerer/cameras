@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Camera Controller</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* === SHARED THEME VARIABLES === */
+:root {
+  --bg: #111;
+  --fg: #eee;
+  --panel: #1b1b1b;
+  --accent: #3fa9f5;
+  --button-bg: #222;
+  --button-fg: #fff;
+  --button-hover: #333;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: sans-serif;
+  overflow: hidden;
+}
+
+/* === TITLE BAR === */
+#titlebar {
+  padding: 10px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--panel);
+  border-bottom: 2px solid var(--accent);
+  text-align: center;
+}
+
+/* === BROADCAST CONSOLE DEPTH & TACTILITY === */
+
+/* Raised hardware-style panels */
+.panel {
+  background: var(--panel);
+  border: 1px solid #000;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px #000 inset,
+    0 2px 4px rgba(0,0,0,0.6),
+    0 0 12px rgba(0,0,0,0.4);
+  padding: 4px 6px;
+}
+
+/* Tactile console buttons */
+.console-button {
+  background: #1a1a1a;
+  color: var(--button-fg);
+  border: 1px solid #000;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-weight: 600;
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 2px 4px rgba(0,0,0,0.6);
+  transition: all 0.1s ease;
+}
+
+.console-button:hover {
+  background: #222;
+  box-shadow:
+    0 0 8px var(--accent),
+    0 0 4px var(--accent) inset,
+    0 2px 4px rgba(0,0,0,0.6);
+}
+
+.console-button:active {
+  background: #111;
+  box-shadow:
+    0 0 0 1px var(--accent) inset,
+    0 0 6px var(--accent) inset;
+}
+
+/* Momentary flash for preset recall */
+.flash {
+  background: var(--accent) !important;
+  color: #000 !important;
+  box-shadow:
+    0 0 12px var(--accent),
+    0 0 4px var(--accent) inset !important;
+}
+
+/* Raised preset tiles */
+.module {
+  background: var(--panel);
+  border-radius: 6px;
+  border: 1px solid #000;
+  box-shadow:
+    0 0 0 1px #000 inset,
+    0 2px 4px rgba(0,0,0,0.6);
+  padding: 4px;
+}
+
+/* Thumbnail hover glow */
+.preset img:hover {
+  box-shadow: 0 0 10px var(--accent);
+  transform: scale(1.02);
+  margin: 0;
+}
+
+
+/* === PREVIEW AREA === */
+#preview-container {
+  position: relative;
+  width: calc(100% - 15px);
+  min-height: 50px; /* ensures buttons never overlap presets */
+/*  margin-right: 2px;*/
+  background: transparent;
+}
+
+#preview-inner {
+  width: 100%;
+  height: 180px;
+  background: black;
+  transition: height 0.25s ease;
+  overflow: hidden;
+  margin: 0;
+}
+
+#preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  margin: 0;
+}
+
+/* === TOGGLE BUTTONS === */
+#previewToggle,
+#thumbToggle {
+  position: absolute;
+  top: 6px;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  border: 1px solid var(--accent);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+#previewToggle:hover,
+#thumbToggle:hover {
+  background: var(--button-hover);
+}
+
+#previewToggle { left: 6px; }
+#thumbToggle { right: 6px; }
+
+/* Hide only the preview video area */
+.hide-preview #preview-inner {
+  height: 0;
+}
+
+/* === PRESET GRID === */
+#presetGrid {
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.preset {
+  background: var(--panel);
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 6px;
+  text-align: center;
+}
+
+.preset img {
+  width: 100%;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  cursor: pointer;
+}
+
+/* Hide ONLY thumbnails */
+.no-thumbs .preset img {
+  display: none;
+}
+
+/* Buttons inside presets */
+.preset button {
+  width: 100%;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 6px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.preset button:hover {
+  background: var(--button-hover);
+}
+</style>
+</head>
+
+<body>
+
+<!-- TITLE BAR -->
+<div id="titlebar" class="panel">Camera <span id="camLabel"></span> Controls</div>
+
+<!-- PREVIEW WITH TOGGLES -->
+<div id="preview-container" class="panel">
+  <button id="previewToggle" class="console-button" onclick="togglePreview()">Preview Off</button>
+  <button id="thumbToggle" class="console-button" onclick="toggleThumbs()">Thumbs Off</button>
+
+  <div id="preview-inner">
+    <img id="preview" src="" alt="Preview">
+  </div>
+</div>
+
+<!-- PRESETS -->
+<div id="presetGrid"></div>
+
+<script>
+/* Read GET parameters */
+const params = new URLSearchParams(window.location.search);
+const cam = Number(params.get("cam"));
+const ipParam = params.get("ip");
+
+/* Camera mapping — loaded from config */
+let CAMERAS = {};
+
+fetch("/multicamera/config/cameras.json")
+  .then(r => r.json())
+  .then(cfg => {
+    CAMERAS = cfg.cameras || {};
+    initController();
+  })
+  .catch(err => {
+    console.error("Failed to load cameras.json:", err);
+  });
+
+function initController() {
+  /* Determine camera IP */
+  const CAMERA_IP = ipParam || CAMERAS[cam];
+
+  /* Update title bar */
+  document.getElementById("camLabel").textContent = cam;
+
+  /* Load preview stream */
+  document.getElementById("preview").src =
+    `/multicamera/cam/${CAMERA_IP}/mjpeg`;
+
+  /* === LOAD PRESETS === */
+  fetch(`/multicamera/config/camera${cam}.json`)
+    .then(r => r.json())
+    .then(data => {
+      const grid = document.getElementById("presetGrid");
+      data.presets.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "preset module";
+        div.innerHTML = `
+          <img src="/multicamera/thumbnails/${cam}/${p.thumb}"
+               onclick="recallPreset(${p.number}, '${CAMERA_IP}')">
+          <button class='console-button' onclick="recallPreset(${p.number}, '${CAMERA_IP}')">
+            ${p.number}: ${p.label}
+          </button>
+        `;
+        grid.appendChild(div);
+      });
+    });
+}
+
+/* === PREVIEW TOGGLE === */
+let showPreview = true;
+
+function togglePreview() {
+  showPreview = !showPreview;
+  document.body.classList.toggle("hide-preview", !showPreview);
+  document.getElementById("previewToggle").textContent =
+    showPreview ? "Preview Off" : "Preview On";
+}
+
+/* === THUMBNAIL TOGGLE === */
+let showThumbs = true;
+
+function toggleThumbs() {
+  showThumbs = !showThumbs;
+  document.body.classList.toggle("no-thumbs", !showThumbs);
+  document.getElementById("thumbToggle").textContent =
+    showThumbs ? "Thumbs Off" : "Thumbs On";
+}
+
+/* === ADAPTIVE PRESET GRID === */
+function updatePresetColumns() {
+  const grid = document.getElementById("presetGrid");
+  const width = window.innerWidth;
+
+  let cols = 3;
+
+  if (width < 400) cols = 2;
+  else if (width < 600) cols = 3;
+  else if (width < 800) cols = 4;
+  else if (width < 1000) cols = 5;
+  else if (width < 1200) cols = 6;
+  else cols = 7;
+
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+}
+
+window.addEventListener("resize", updatePresetColumns);
+window.addEventListener("load", updatePresetColumns);
+
+/* === PTZ PRESET RECALL === */
+function recallPreset(num, cameraIp) {
+  const index = num - 1;
+  const cmd = index.toString().padStart(2, "0");
+  const buttons = document.querySelectorAll(`button[onclick="recallPreset(${num}, '${cameraIp}')"]`);
+
+  fetch(`/multicamera/cam/${cameraIp}/ptz?cmd=%23R${cmd}&res=1`).then(r => {
+    if (!r.ok) throw new Error(r.status);
+    // Momentary flash effect on success
+    buttons.forEach(btn => {
+      btn.classList.add("flash");
+      setTimeout(() => btn.classList.remove("flash"), 180);
+    });
+  }).catch(err => {
+    console.error("Preset error:", err);
+    buttons.forEach(btn => {
+      btn.style.outline = '2px solid #d64045';
+      setTimeout(() => { btn.style.outline = ''; }, 1000);
+    });
+  });
+}
+</script>
+
+</body>
+</html>
+

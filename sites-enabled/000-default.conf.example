@@ -1,0 +1,72 @@
+<VirtualHost *:80>
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/html
+
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+
+        # HLS stream encoder proxy
+        ProxyPass        /hls/  http://ENCODER_HOSTNAME:8086/
+        ProxyPassReverse /hls/  http://ENCODER_HOSTNAME:8086/
+
+        # Single-camera MJPEG + PTZ (legacy cameracontrol page)
+        ProxyPass        /mjpeg  http://CAMERA_1_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+        ProxyPassReverse /mjpeg  http://CAMERA_1_IP/cgi-bin/mjpeg
+
+        ProxyPass        /cam/ptz  http://CAMERA_1_IP/cgi-bin/aw_ptz
+        ProxyPassReverse /cam/ptz  http://CAMERA_1_IP/cgi-bin/aw_ptz
+
+        ProxyPass        /cam/cam  http://CAMERA_1_IP/cgi-bin/aw_cam
+        ProxyPassReverse /cam/cam  http://CAMERA_1_IP/cgi-bin/aw_cam
+
+
+# ============================================
+# STATIC FILES (index.htm, controller.html, config, thumbnails)
+# ============================================
+
+Alias /multicamera "/var/www/html/multicamera"
+<Directory "/var/www/html/multicamera">
+    Options Indexes FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+
+# ============================================
+# CAMERA MJPEG STREAMS
+# /multicamera/cam/<ip>/mjpeg → http://<ip>/cgi-bin/mjpeg
+# ============================================
+
+ProxyPassMatch ^/multicamera/cam/([^/]+)/mjpeg$ http://$1/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPassReverse /multicamera/cam/ http://$1/cgi-bin/mjpeg
+
+# ============================================
+# CAMERA PTZ COMMANDS
+# /multicamera/cam/<ip>/ptz?... → http://<ip>/cgi-bin/ptz?...
+# ============================================
+
+ProxyPassMatch ^/multicamera/cam/([^/]+)/ptz(.*)$ http://$1/cgi-bin/aw_ptz$2
+ProxyPassReverse /multicamera/cam/ http://CAMERA_1_IP/cgi-bin/aw_ptz
+ProxyPassReverse /multicamera/cam/ http://CAMERA_2_IP/cgi-bin/aw_ptz
+ProxyPassReverse /multicamera/cam/ http://CAMERA_3_IP/cgi-bin/aw_ptz
+ProxyPassReverse /multicamera/cam/ http://CAMERA_4_IP/cgi-bin/aw_ptz
+
+
+# ============================================
+# VIDEO SWITCHER
+# ============================================
+
+ProxyPass /multicamera/switcher http://SWITCHER_IP/
+ProxyPassReverse /multicamera/switcher http://SWITCHER_IP/
+
+# ============================================
+# GENERAL PROXY SETTINGS
+# ============================================
+
+ProxyPreserveHost On
+ProxyRequests Off
+
+
+
+</VirtualHost>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Saint Demetrios Camera Console</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+/* === THEME VARIABLES === */
+:root {
+  --bg: #111;
+  --fg: #eee;
+  --panel: #1b1b1b;
+  --accent: #3fa9f5;
+  --button-bg: #222;
+  --button-fg: #fff;
+  --button-hover: #333;
+}
+
+/* === GLOBAL === */
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* === PANELS === */
+.panel {
+  background: var(--panel);
+  border: 1px solid #000;
+  border-radius: 6px;
+  box-shadow:
+    0 0 0 1px #000 inset,
+    0 2px 4px rgba(0,0,0,0.6),
+    0 0 12px rgba(0,0,0,0.4);
+}
+
+/* === BUTTONS === */
+.console-button {
+  background: #1a1a1a;
+  color: var(--button-fg);
+  border: 1px solid #000;
+  border-radius: 4px;
+  padding: 10px 20px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 2px 4px rgba(0,0,0,0.6);
+  transition: all 0.1s ease;
+}
+
+.console-button:hover {
+  background: #222;
+  box-shadow:
+    0 0 6px var(--accent),
+    0 2px 4px rgba(0,0,0,0.6);
+}
+
+.console-button:active {
+  background: #111;
+  box-shadow:
+    0 0 0 1px var(--accent) inset,
+    0 0 6px var(--accent) inset;
+}
+
+/* === TITLE BAR === */
+#titlebar {
+  padding: 14px 18px;
+  font-size: 20px;
+  font-weight: 600;
+  background: var(--panel);
+  border-bottom: 3px solid var(--accent);
+  text-align: center;
+  position: relative;
+  z-index: 3000;
+}
+
+/* === TOP BAR LAYOUT === */
+#top-bar {
+  position: relative;
+  display: flex;
+  gap: 16px;
+  padding: 12px;
+  align-items: stretch;
+}
+
+/* === PREVIEW SHELL (640px wide, vertically resizable) === */
+#preview-shell {
+  width: 640px;
+  min-height: 260px;
+  max-height: 70vh;
+  resize: vertical;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#programVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* === SWITCHER COLUMN === */
+#switcher-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 200px;
+}
+
+/* === SLIDE-IN DRAWER === */
+#drawer-toggle {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 3500;
+}
+
+#drawer {
+  position: absolute;
+  top: 0;
+  top: 100%;          /* directly under the title bar */
+  left: -300px;       /* hidden */
+  width: 300px;
+  height: 100%;       /* matches top-area height */
+  background: var(--panel);
+  padding: 20px;
+  box-shadow: 4px 0 12px rgba(0,0,0,0.6);
+  transition: left 0.3s ease-out;
+  z-index: 10;
+}
+
+#drawer.open {
+  left: 0;
+}
+
+#drawer h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+#drawer label {
+  display: block;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.checkbox-active {
+  color: var(--accent);
+  text-shadow: 0 0 6px var(--accent);
+}
+
+/* === CAMERA GRID === */
+#camera-grid {
+  flex: 1;
+  display: grid;
+  gap: 8px;
+  padding: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-auto-rows: 1fr;
+  overflow-y: auto;
+}
+
+.module {
+  background: var(--panel);
+  border-radius: 4px;
+  border: 1px solid #000;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  padding: 2px;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #000;
+}
+</style>
+</head>
+
+<body>
+
+<div id="titlebar" class="panel">
+	<div id="drawer-toggle">☰</div>
+	Saint Demetrios Camera Console
+</div>
+
+<!-- HAMBURGER TOGGLE -->
+
+
+<!-- SLIDE-IN DRAWER -->
+<div id="drawer" class="panel">
+  <h3>Active Cameras</h3>
+  <label><input type="checkbox" value="1" checked> Camera 1</label>
+  <label><input type="checkbox" value="2" checked> Camera 2</label>
+  <label><input type="checkbox" value="3" checked> Camera 3</label>
+  <label><input type="checkbox" value="4" checked> Camera 4</label>
+</div>
+
+<!-- TOP BAR -->
+<div id="top-bar">
+  <div id="preview-shell" class="panel">
+    <video id="programVideo" playsinline webkit-playsinline controls></video>
+  </div>
+
+  <div id="switcher-column">
+    <button class="console-button" onclick="switchTo(1)">Send Camera 1</button>
+    <button class="console-button" onclick="switchTo(2)">Send Camera 2</button>
+    <button class="console-button" onclick="switchTo(3)">Send Camera 3</button>
+    <button class="console-button" onclick="switchTo(4)">Send Camera 4</button>
+  </div>
+</div>
+
+<!-- CAMERA GRID -->
+<div id="camera-grid"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<script>
+/* DRAWER TOGGLE */
+const drawer = document.getElementById("drawer");
+document.getElementById("drawer-toggle").onclick = () => {
+  document.getElementById("drawer").classList.toggle("open");
+};
+
+/* PROGRAM OUTPUT */
+document.addEventListener("DOMContentLoaded", () => {
+  const video = document.getElementById("programVideo");
+
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource("/hls/2.m3u8");
+    hls.attachMedia(video);
+  } else {
+    video.src = "/hls/1.m3u8";
+  }
+});
+
+/* SWITCHER CONTROL */
+function switchTo(input) {
+  fetch(`/multicamera/switcher/route?input=${input}&output=1`)
+    .catch(err => console.error("Switcher error:", err));
+}
+
+/* CAMERA IFRAMES */
+const grid = document.getElementById("camera-grid");
+const checkboxes = drawer.querySelectorAll("input[type=checkbox]");
+
+function updateCheckboxGlow() {
+  checkboxes.forEach(cb => {
+    const label = cb.parentElement;
+    if (cb.checked) label.classList.add("checkbox-active");
+    else label.classList.remove("checkbox-active");
+  });
+}
+
+function renderIframes() {
+  grid.innerHTML = "";
+  checkboxes.forEach(cb => {
+    localStorage.setItem("cam" + cb.value, cb.checked);
+    if (cb.checked) {
+      const wrapper = document.createElement("div");
+      wrapper.className = "module";
+      const iframe = document.createElement("iframe");
+      iframe.src = `/multicamera/controller.html?cam=${cb.value}`;
+      wrapper.appendChild(iframe);
+      grid.appendChild(wrapper);
+    }
+  });
+}
+
+/* Load saved state */
+checkboxes.forEach(cb => {
+  const saved = localStorage.getItem("cam" + cb.value);
+  if (saved !== null) cb.checked = saved === "true";
+});
+updateCheckboxGlow();
+
+/* React to changes */
+checkboxes.forEach(cb => cb.addEventListener("change", () => {
+  renderIframes();
+  updateCheckboxGlow();
+}));
+
+renderIframes();
+</script>
+
+</body>
+</html>
+

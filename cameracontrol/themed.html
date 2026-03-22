@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PTZ Preset Controller</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<style>
+/* === SHARED BROADCAST-CONSOLE THEME === */
+:root {
+  --bg: #111;
+  --fg: #eee;
+  --panel: #1b1b1b;
+  --accent: #3fa9f5;
+  --button-bg: #222;
+  --button-fg: #fff;
+  --button-hover: #333;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+}
+
+/* === HARDWARE PANELS === */
+.panel {
+  background: var(--panel);
+  border-radius: 6px;
+  border: 1px solid #000;
+  box-shadow:
+    0 0 0 1px #000 inset,
+    0 2px 4px rgba(0,0,0,0.6);
+}
+
+/* === TACTILE BUTTONS === */
+.console-button {
+  background: var(--button-bg);
+  color: var(--button-fg);
+  border: 1px solid #000;
+  border-radius: 4px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 2px 4px rgba(0,0,0,0.6);
+  transition: all 0.12s ease;
+}
+
+.console-button:hover {
+  background: var(--button-hover);
+  box-shadow:
+    0 0 10px var(--accent),
+    0 0 6px var(--accent) inset,
+    0 2px 4px rgba(0,0,0,0.6);
+}
+
+.console-button:active {
+  background: #111;
+  box-shadow:
+    0 0 0 1px var(--accent) inset,
+    0 0 6px var(--accent) inset;
+}
+
+/* === HEADER === */
+header {
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+header.panel {
+  border-bottom: 2px solid var(--accent);
+}
+
+.header-left h2 {
+  margin: 0;
+  color: var(--fg);
+}
+
+.header-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* === LAYOUT === */
+.layout {
+  display: flex;
+  height: calc(100vh - 70px);
+}
+
+/* === PREVIEW === */
+.preview {
+  flex: 0 0 40%;
+  background: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview img,
+.preview video {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+/* === PRESET GRID === */
+.presets {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+/* === PRESET TILE === */
+.preset {
+  background: var(--panel);
+  border-radius: 6px;
+  border: 1px solid #000;
+  padding: 8px;
+  box-shadow:
+    0 0 0 1px #000 inset,
+    0 2px 4px rgba(0,0,0,0.6);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.preset:hover {
+  box-shadow:
+    0 0 10px var(--accent),
+    0 0 6px var(--accent) inset,
+    0 2px 4px rgba(0,0,0,0.6);
+  transform: translateY(-2px);
+}
+
+.preset img {
+  width: 100%;
+  border-radius: 4px;
+}
+
+/* === LABEL === */
+.preset-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+/* === THUMBNAIL TOGGLE === */
+body.hide-thumbs .preset img {
+  display: none;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 900px) and (orientation: landscape) {
+  .presets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .preview {
+    flex: 0 0 35%;
+  }
+}
+
+@media (max-width: 700px) {
+  .layout {
+    flex-direction: column;
+  }
+  .preview {
+    flex: 0 0 auto;
+    height: 35vh;
+  }
+  .presets {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header class="panel">
+  <div class="header-left">
+    <h2>Camera Presets</h2>
+  </div>
+  <div class="header-right">
+    <button class="console-button" onclick="switchToMJPEG()">Preview</button>
+    <button class="console-button" onclick="switchToHLS()">Live with Audio</button>
+    <button class="console-button" onclick="toggleThumbnails()">Thumbnails On/Off</button>
+  </div>
+</header>
+
+<div class="layout">
+  <div class="preview panel">
+    <img id="liveFeed" style="display:block;">
+    <video id="liveFeedVideo"
+           controls
+           playsinline
+           webkit-playsinline
+           autoplay muted
+           style="display:none; width:100%; height:auto;">
+    </video>
+  </div>
+
+  <div class="presets" id="presetGrid"></div>
+</div>
+
+<script>
+/* unchanged JS — all logic preserved exactly */
+const LIVE_URL = "/mjpeg";
+const HLS_URL  = "/hls/2.m3u8";
+
+const PRESETS = [
+  { number: 1,  label: "Full zoom out",                     image: "images/preset1.jpg" },
+  { number: 2,  label: "Slightly zoomed in",                image: "images/preset2.jpg" },
+  { number: 3,  label: "Standard view",                     image: "images/preset3.jpg" },
+  { number: 4,  label: "Lectern (Homily)",                  image: "images/preset4.jpg" },
+  { number: 5,  label: "Up close Altar",                    image: "images/preset5.jpg" },
+  { number: 6,  label: "Icon above doors",                  image: "images/preset6.jpg" },
+  { number: 7,  label: "Baptismal font",                    image: "images/preset7.jpg" },
+  { number: 8,  label: "Choir loft",                        image: "images/none.jpg" },
+  { number: 9,  label: "Center aisle",                      image: "images/preset9.jpg" },
+  { number: 10, label: "Low announcements",                 image: "images/preset10.jpg" },
+  { number: 11, label: "Michael to canter",                 image: "images/preset11.jpg" },
+  { number: 12, label: "Closing announcements",             image: "images/preset12.jpg" },
+  { number: 13, label: "Memorial service",                  image: "images/preset13.jpg" },
+  { number: 14, label: "Choir Loft 2",                      image: "images/none.jpg" },
+  { number: 15, label: "Chanter",                           image: "images/preset15.jpg" },
+  { number: 16, label: "Saint Demetrios",                   image: "images/preset16.jpg" },
+  { number: 17, label: "Lectern to Gabriel",                image: "images/preset17.jpg" },
+  { number: 18, label: "Left Aisle",                        image: "images/preset18.jpg" },
+  { number: 19, label: "Right Aisle",                       image: "images/preset19.jpg" },
+  { number: 20, label: "Low center icon on easel",          image: "images/preset20.jpg" },
+  { number: 21, label: "Choir Loft 3 (canter side)",        image: "images/none.jpg" },
+  { number: 22, label: "Choir Loft 4 (forward - Pascha)",   image: "images/preset22.jpg" }
+];
+
+const grid = document.getElementById("presetGrid");
+
+PRESETS.forEach(preset => {
+  const div = document.createElement("div");
+  div.className = "preset";
+  div.onclick = function() { goToPreset(preset.number, this); };
+
+  const img = document.createElement("img");
+  img.src = preset.image;
+
+  const label = document.createElement("div");
+  label.className = "preset-label";
+  label.textContent = `${preset.number} — ${preset.label}`;
+
+  div.appendChild(img);
+  div.appendChild(label);
+  grid.appendChild(div);
+});
+
+function goToPreset(num, btn) {
+  const index = num - 1;
+  const cmd = index.toString().padStart(2, "0");
+  fetch(`/cam/ptz?cmd=%23R${cmd}&res=1`).then(r => {
+    if (!r.ok) throw new Error(r.status);
+  }).catch(() => {
+    if (btn) {
+      btn.style.outline = '2px solid #d64045';
+      setTimeout(() => { btn.style.outline = ''; }, 1000);
+    }
+  });
+}
+
+function switchToMJPEG() {
+  const img = document.getElementById("liveFeed");
+  const video = document.getElementById("liveFeedVideo");
+  video.pause();
+  video.style.display = "none";
+  img.style.display = "block";
+  img.src = LIVE_URL + "?t=" + Date.now();
+}
+
+function switchToHLS() {
+  const img = document.getElementById("liveFeed");
+  const video = document.getElementById("liveFeedVideo");
+  img.style.display = "none";
+  video.style.display = "block";
+
+  if (Hls.isSupported()) {
+    const hls = new Hls();
+    hls.loadSource(HLS_URL);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => video.play());
+  } else {
+    video.src = HLS_URL;
+    video.play();
+  }
+}
+
+function toggleThumbnails() {
+  document.body.classList.toggle("hide-thumbs");
+}
+
+switchToMJPEG();
+</script>
+
+</body>
+</html>
+
