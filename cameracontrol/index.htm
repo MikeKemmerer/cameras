@@ -714,7 +714,9 @@ function switchToHLS() {
 // THUMBNAIL TOGGLE
 // ------------------------------------------------------------
 function toggleThumbnails() {
-    document.body.classList.toggle("hide-thumbs");
+    const showThumbs = document.getElementById('thumbToggle').checked;
+    document.body.classList.toggle('hide-thumbs', !showThumbs);
+    localStorage.setItem('showThumbs', showThumbs ? '1' : '0');
 }
 
 function toggleDarkMode() {
@@ -723,10 +725,14 @@ function toggleDarkMode() {
     localStorage.setItem('darkMode', isDark ? '1' : '0');
 }
 
-// Restore dark mode preference
+// Restore preferences
 if (localStorage.getItem('darkMode') === '1') {
     document.body.classList.add('dark');
     document.getElementById('darkToggle').checked = true;
+}
+if (localStorage.getItem('showThumbs') === '0') {
+    document.body.classList.add('hide-thumbs');
+    document.getElementById('thumbToggle').checked = false;
 }
 
 // ------------------------------------------------------------
