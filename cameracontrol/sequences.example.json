@@ -1,7 +1,23 @@
 [
     {
+        "name": "Congregation Sweep",
+        "steps": [
+            { "preset": 18, "delay": 13, "label": "Left Aisle" },
+            { "preset": 9, "delay": 12.2, "label": "Center aisle" },
+            { "preset": 19, "delay": 0, "label": "Right Aisle" }
+        ]
+    },
+    {
+        "name": "Great Entrance",
+        "steps": [
+            { "preset": 18, "delay": 18, "label": "Left Aisle" },
+            { "preset": 9, "delay": 15, "label": "Center aisle" },
+            { "preset": 10, "delay": 5, "label": "Low announcements" },
+            { "preset": 12, "delay": 0, "label": "Closing announcements" }
+        ]
+    },
+    {
         "name": "Wide Cycle",
-        "loop": true,
         "steps": [
             { "preset": 1, "delay": 15, "label": "Full zoom out" },
             { "preset": 3, "delay": 15, "label": "Standard view" },
@@ -9,15 +25,7 @@
         ]
     },
     {
-        "name": "Sermon",
-        "loop": false,
-        "steps": [
-            { "preset": 4, "delay": 0, "label": "Lectern (Homily)" }
-        ]
-    },
-    {
         "name": "Pre-Service Rotation",
-        "loop": true,
         "steps": [
             { "preset": 6, "delay": 20, "label": "Icon above doors" },
             { "preset": 16, "delay": 20, "label": "Saint Demetrios" },

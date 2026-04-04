@@ -195,6 +195,7 @@
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
+        margin-bottom: 10px;
     }
 
     .seq-step-pip {
@@ -217,9 +218,25 @@
         color: #155724;
     }
 
+    .seq-next-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #28a745;
+        color: white;
+        transition: background 0.15s;
+    }
+
+    .seq-next-btn:hover {
+        background: #218838;
+    }
+
     .seq-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
         gap: 12px;
     }
 
@@ -249,19 +266,10 @@
         font-weight: 700;
     }
 
-    .seq-loop-badge {
-        font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 10px;
-        background: #e8f4fd;
-        color: #0078d4;
-        font-weight: 600;
-    }
-
     .seq-card-meta {
         font-size: 13px;
         color: #777;
-        margin-bottom: 12px;
+        margin-bottom: 10px;
     }
 
     .seq-card-steps {
@@ -271,10 +279,15 @@
         line-height: 1.5;
     }
 
-    .seq-play-btn {
-        width: 100%;
-        padding: 8px;
-        font-size: 14px;
+    .seq-mode-btns {
+        display: flex;
+        gap: 6px;
+    }
+
+    .seq-mode-btn {
+        flex: 1;
+        padding: 7px 4px;
+        font-size: 12px;
         font-weight: 600;
         border: none;
         border-radius: 6px;
@@ -284,16 +297,35 @@
         transition: background 0.15s;
     }
 
-    .seq-play-btn:hover {
+    .seq-mode-btn:hover {
         background: #005fa3;
     }
 
-    .seq-play-btn.running {
+    /* Global stop button */
+    #globalStopBtn {
+        display: none;
+        padding: 8px 16px;
+        font-size: 14px;
+        font-weight: 700;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
         background: #d64045;
+        color: white;
+        animation: pulse-stop 1.5s infinite;
     }
 
-    .seq-play-btn.running:hover {
+    #globalStopBtn:hover {
         background: #b33438;
+    }
+
+    #globalStopBtn.visible {
+        display: inline-block;
+    }
+
+    @keyframes pulse-stop {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(214,64,69,0.5); }
+        50% { box-shadow: 0 0 0 6px rgba(214,64,69,0); }
     }
 
     @media (max-width: 900px) and (orientation: landscape) {
@@ -325,8 +357,7 @@
     <div class="header-left">
         <h2>Camera Presets</h2>
     </div>
-    <div class="header-right">
-        <button onclick="switchToMJPEG()">MJPEG</button>
+    <div class="header-right">        <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop Sequence</button>        <button onclick="switchToMJPEG()">MJPEG</button>
         <button onclick="switchToHLS()">HLS w/ 🔉</button>
         <button onclick="toggleThumbnails()">Thumbnails</button>
 	<button onclick="requestWakeLock()">Keep Awake</button>
@@ -363,6 +394,7 @@
                     <span class="seq-status-badge" id="seqStatusBadge"></span>
                 </div>
                 <div class="seq-steps-progress" id="seqStepsProgress"></div>
+                <div id="seqNextArea"></div>
             </div>
             <div class="seq-grid" id="seqGrid"></div>
         </div>
@@ -462,6 +494,9 @@ PRESETS.forEach(preset => {
 // SEND PRESET COMMAND (proxied PTZ)
 // ------------------------------------------------------------
 function goToPreset(num, btn) {
+    // Manual preset selection stops any running sequence
+    if (btn) stopSequence();
+
     const index = num - 1;
     const cmd = index.toString().padStart(2, "0");
     const url = `/cam/ptz?cmd=%23R${cmd}&res=1`;
@@ -525,6 +560,8 @@ function switchTab(tabName) {
     if (tabName === 'presets') {
         document.getElementById('presetPanel').classList.add('active');
         document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        // Switching to presets stops any running sequence
+        stopSequence();
     } else {
         document.getElementById('sequencesPanel').classList.add('active');
         document.querySelectorAll('.tab-btn')[1].classList.add('active');
@@ -535,7 +572,10 @@ function switchTab(tabName) {
 // SEQUENCE ENGINE
 // ------------------------------------------------------------
 let sequences = [];
-let activeSequence = null;  // { name, steps, loop, stepIndex, timer }
+let activeSequence = null;
+// activeSequence = { name, steps, mode, stepIndex, direction, timer }
+// mode: 'auto' | 'semi' | 'boomerang'
+// direction: 1 (forward) | -1 (backward) — used by boomerang
 
 async function loadSequences() {
     try {
@@ -560,24 +600,28 @@ function renderSequences() {
     sequences.forEach(seq => {
         const card = document.createElement('div');
         card.className = 'seq-card';
-        card.id = 'seq-card-' + seq.name.replace(/\s+/g, '-');
 
         const totalTime = seq.steps.reduce((s, st) => s + st.delay, 0);
         const stepList = seq.steps.map((st, i) =>
-            `${i + 1}. Preset ${st.preset}` + (st.label ? ` (${st.label})` : '') + (st.delay > 0 ? ` — ${st.delay}s` : '')
+            `${i + 1}. Preset ${st.preset}` + (st.label ? ` (${st.label})` : '') + (st.delay > 0 ? ` \u2014 ${st.delay}s` : '')
         ).join('<br>');
+
+        const safeName = escapeHtml(seq.name);
 
         card.innerHTML =
             '<div class="seq-card-header">' +
-                '<span class="seq-card-name">' + escapeHtml(seq.name) + '</span>' +
-                (seq.loop ? '<span class="seq-loop-badge">&#x1f501; Loop</span>' : '') +
+                '<span class="seq-card-name">' + safeName + '</span>' +
             '</div>' +
             '<div class="seq-card-meta">' +
                 seq.steps.length + ' step' + (seq.steps.length !== 1 ? 's' : '') +
                 (totalTime > 0 ? ' &middot; ' + totalTime + 's per cycle' : '') +
             '</div>' +
             '<div class="seq-card-steps">' + stepList + '</div>' +
-            '<button class="seq-play-btn" data-seq="' + escapeHtml(seq.name) + '" onclick="toggleSequence(this)">&#9654; Play</button>';
+            '<div class="seq-mode-btns">' +
+                '<button class="seq-mode-btn" data-seq="' + safeName + '" data-mode="auto" onclick="startSequence(this)">&#9654; Full Auto</button>' +
+                '<button class="seq-mode-btn" data-seq="' + safeName + '" data-mode="semi" onclick="startSequence(this)">&#9197; Semi Auto</button>' +
+                '<button class="seq-mode-btn" data-seq="' + safeName + '" data-mode="boomerang" onclick="startSequence(this)">&#x1f501; Boomerang</button>' +
+            '</div>';
 
         grid.appendChild(card);
     });
@@ -589,86 +633,110 @@ function escapeHtml(str) {
     return d.innerHTML;
 }
 
-function toggleSequence(btn) {
+function startSequence(btn) {
     const name = btn.getAttribute('data-seq');
+    const mode = btn.getAttribute('data-mode');
 
-    // If this sequence is already running, stop it
-    if (activeSequence && activeSequence.name === name) {
-        stopSequence();
-        return;
-    }
-
-    // Stop any other running sequence first
-    if (activeSequence) stopSequence();
+    // Stop any running sequence first
+    stopSequence();
 
     const seq = sequences.find(s => s.name === name);
-    if (!seq) return;
+    if (!seq || seq.steps.length === 0) return;
 
     activeSequence = {
         name: seq.name,
         steps: seq.steps,
-        loop: seq.loop,
+        mode: mode,
         stepIndex: 0,
+        direction: 1,
         timer: null
     };
 
-    // Update button states
-    document.querySelectorAll('.seq-play-btn').forEach(b => {
-        b.classList.remove('running');
-        b.innerHTML = '&#9654; Play';
-    });
-    btn.classList.add('running');
-    btn.innerHTML = '&#9632; Stop';
-
-    // Show status bar
+    document.getElementById('globalStopBtn').classList.add('visible');
     showStatus();
-    runStep();
+    executeStep();
 }
 
-function runStep() {
+function executeStep() {
     if (!activeSequence) return;
 
-    const { steps, stepIndex, loop } = activeSequence;
-
-    if (stepIndex >= steps.length) {
-        if (loop) {
-            activeSequence.stepIndex = 0;
-            runStep();
-        } else {
-            stopSequence();
-        }
-        return;
-    }
-
+    const { steps, stepIndex, mode } = activeSequence;
     const step = steps[stepIndex];
+
+    // Fire the preset command
     goToPreset(step.preset);
     updateStatus();
 
-    if (step.delay > 0) {
-        activeSequence.timer = setTimeout(() => {
-            if (!activeSequence) return;
-            activeSequence.stepIndex++;
-            runStep();
-        }, step.delay * 1000);
-    } else if (stepIndex < steps.length - 1) {
-        // No delay but more steps — short pause for camera to acknowledge
-        activeSequence.timer = setTimeout(() => {
-            if (!activeSequence) return;
-            activeSequence.stepIndex++;
-            runStep();
-        }, 500);
-    } else {
-        // Last step, no delay
-        if (loop) {
-            activeSequence.timer = setTimeout(() => {
-                if (!activeSequence) return;
-                activeSequence.stepIndex = 0;
-                runStep();
-            }, 500);
-        } else {
-            stopSequence();
-        }
+    if (mode === 'semi') {
+        // Show next button (or finish)
+        showNextButton();
+        return;
     }
+
+    // Auto or Boomerang — schedule next step after delay
+    const delay = step.delay > 0 ? step.delay * 1000 : 500;
+    activeSequence.timer = setTimeout(() => {
+        if (!activeSequence) return;
+        advanceStep();
+    }, delay);
+}
+
+function advanceStep() {
+    if (!activeSequence) return;
+
+    const { steps, mode, direction } = activeSequence;
+
+    if (mode === 'boomerang') {
+        const nextIndex = activeSequence.stepIndex + direction;
+
+        if (nextIndex >= steps.length) {
+            // Reached end, reverse direction
+            activeSequence.direction = -1;
+            activeSequence.stepIndex = steps.length - 2;
+            if (activeSequence.stepIndex < 0) activeSequence.stepIndex = 0;
+        } else if (nextIndex < 0) {
+            // Reached start, reverse direction
+            activeSequence.direction = 1;
+            activeSequence.stepIndex = 1;
+            if (activeSequence.stepIndex >= steps.length) activeSequence.stepIndex = 0;
+        } else {
+            activeSequence.stepIndex = nextIndex;
+        }
+        executeStep();
+    } else {
+        // Full auto — advance forward, loop at end
+        activeSequence.stepIndex++;
+        if (activeSequence.stepIndex >= steps.length) {
+            activeSequence.stepIndex = 0;
+        }
+        executeStep();
+    }
+}
+
+function showNextButton() {
+    const area = document.getElementById('seqNextArea');
+    if (!activeSequence) { area.innerHTML = ''; return; }
+
+    const { steps, stepIndex } = activeSequence;
+    const nextIndex = stepIndex + 1;
+
+    if (nextIndex >= steps.length) {
+        area.innerHTML = '<button class="seq-next-btn" onclick="stopSequence()">\u2714 Finish</button>';
+    } else {
+        const next = steps[nextIndex];
+        const label = next.label ? next.label : 'Preset ' + next.preset;
+        area.innerHTML = '<button class="seq-next-btn" onclick="semiNext()">Next \u2192 P' + next.preset + ' (' + escapeHtml(label) + ')</button>';
+    }
+}
+
+function semiNext() {
+    if (!activeSequence) return;
+    activeSequence.stepIndex++;
+    if (activeSequence.stepIndex >= activeSequence.steps.length) {
+        stopSequence();
+        return;
+    }
+    executeStep();
 }
 
 function stopSequence() {
@@ -677,29 +745,28 @@ function stopSequence() {
     }
     activeSequence = null;
 
-    // Reset all buttons
-    document.querySelectorAll('.seq-play-btn').forEach(b => {
-        b.classList.remove('running');
-        b.innerHTML = '&#9654; Play';
-    });
-
-    // Hide status
+    document.getElementById('globalStopBtn').classList.remove('visible');
     document.getElementById('seqStatus').classList.remove('active');
+    document.getElementById('seqNextArea').innerHTML = '';
 }
 
 function showStatus() {
-    const status = document.getElementById('seqStatus');
-    status.classList.add('active');
+    document.getElementById('seqStatus').classList.add('active');
     updateStatus();
 }
 
 function updateStatus() {
     if (!activeSequence) return;
 
+    const modeLabels = { auto: 'Full Auto', semi: 'Semi Auto', boomerang: 'Boomerang' };
+    const dirLabel = activeSequence.mode === 'boomerang'
+        ? (activeSequence.direction === 1 ? ' \u25B6' : ' \u25C0')
+        : '';
+
     document.getElementById('seqStatusName').textContent = activeSequence.name;
     document.getElementById('seqStatusBadge').textContent =
-        'Step ' + (activeSequence.stepIndex + 1) + ' of ' + activeSequence.steps.length +
-        (activeSequence.loop ? ' (looping)' : '');
+        modeLabels[activeSequence.mode] + ' — Step ' +
+        (activeSequence.stepIndex + 1) + ' of ' + activeSequence.steps.length + dirLabel;
 
     const progress = document.getElementById('seqStepsProgress');
     progress.innerHTML = '';
