@@ -59,10 +59,6 @@
     .presets {
         flex: 1;
         overflow-y: auto;
-        padding: 20px;
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
     }
 
     .preset {
@@ -115,9 +111,194 @@
         display: none;
     }
 
+    /* === TAB BAR === */
+    .tab-bar {
+        display: flex;
+        gap: 0;
+        background: #e0e0e0;
+        border-bottom: 2px solid #0078d4;
+    }
+
+    .tab-btn {
+        padding: 10px 24px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        background: #e0e0e0;
+        color: #555;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: background 0.15s, color 0.15s;
+    }
+
+    .tab-btn:hover {
+        background: #d0d0d0;
+    }
+
+    .tab-btn.active {
+        background: #f5f5f5;
+        color: #0078d4;
+        border-bottom-color: #0078d4;
+    }
+
+    .tab-panel {
+        display: none;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .tab-panel.active {
+        display: block;
+    }
+
+    /* === SEQUENCES PANEL === */
+    .sequences-panel {
+        padding: 20px;
+    }
+
+    .seq-status {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        padding: 16px;
+        margin-bottom: 16px;
+        display: none;
+    }
+
+    .seq-status.active {
+        display: block;
+    }
+
+    .seq-status-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .seq-status-name {
+        font-size: 16px;
+        font-weight: 700;
+        color: #0078d4;
+    }
+
+    .seq-status-badge {
+        font-size: 12px;
+        padding: 3px 10px;
+        border-radius: 12px;
+        background: #e8f4fd;
+        color: #0078d4;
+        font-weight: 600;
+    }
+
+    .seq-steps-progress {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .seq-step-pip {
+        padding: 4px 10px;
+        border-radius: 4px;
+        font-size: 12px;
+        background: #f0f0f0;
+        color: #888;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .seq-step-pip.active {
+        background: #0078d4;
+        color: white;
+        font-weight: 600;
+    }
+
+    .seq-step-pip.done {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .seq-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 12px;
+    }
+
+    .seq-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        padding: 16px;
+        border: 2px solid transparent;
+        transition: border 0.15s, box-shadow 0.15s;
+    }
+
+    .seq-card:hover {
+        border-color: #0078d4;
+        box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+    }
+
+    .seq-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .seq-card-name {
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+    .seq-loop-badge {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: #e8f4fd;
+        color: #0078d4;
+        font-weight: 600;
+    }
+
+    .seq-card-meta {
+        font-size: 13px;
+        color: #777;
+        margin-bottom: 12px;
+    }
+
+    .seq-card-steps {
+        font-size: 12px;
+        color: #999;
+        margin-bottom: 12px;
+        line-height: 1.5;
+    }
+
+    .seq-play-btn {
+        width: 100%;
+        padding: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #0078d4;
+        color: white;
+        transition: background 0.15s;
+    }
+
+    .seq-play-btn:hover {
+        background: #005fa3;
+    }
+
+    .seq-play-btn.running {
+        background: #d64045;
+    }
+
+    .seq-play-btn.running:hover {
+        background: #b33438;
+    }
+
     @media (max-width: 900px) and (orientation: landscape) {
-        .presets {
-            grid-template-columns: repeat(2, 1fr);
+        #presetGrid {
+            grid-template-columns: repeat(2, 1fr) !important;
         }
         .preview {
             flex: 0 0 35%;
@@ -132,8 +313,8 @@
             flex: 0 0 auto;
             height: 35vh;
         }
-        .presets {
-            grid-template-columns: repeat(2, 1fr);
+        #presetGrid {
+            grid-template-columns: repeat(2, 1fr) !important;
         }
     }
 </style>
@@ -165,7 +346,27 @@
 
     </div>
 
-    <div class="presets" id="presetGrid"></div>
+    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('presets')">Presets</button>
+            <button class="tab-btn" onclick="switchTab('sequences')">Sequences</button>
+        </div>
+
+        <div class="tab-panel active presets" id="presetPanel">
+            <div id="presetGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; padding:20px;"></div>
+        </div>
+
+        <div class="tab-panel sequences-panel" id="sequencesPanel">
+            <div class="seq-status" id="seqStatus">
+                <div class="seq-status-header">
+                    <span class="seq-status-name" id="seqStatusName"></span>
+                    <span class="seq-status-badge" id="seqStatusBadge"></span>
+                </div>
+                <div class="seq-steps-progress" id="seqStepsProgress"></div>
+            </div>
+            <div class="seq-grid" id="seqGrid"></div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -313,6 +514,207 @@ function switchToHLS() {
 function toggleThumbnails() {
     document.body.classList.toggle("hide-thumbs");
 }
+
+// ------------------------------------------------------------
+// TAB SWITCHING
+// ------------------------------------------------------------
+function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+    if (tabName === 'presets') {
+        document.getElementById('presetPanel').classList.add('active');
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    } else {
+        document.getElementById('sequencesPanel').classList.add('active');
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    }
+}
+
+// ------------------------------------------------------------
+// SEQUENCE ENGINE
+// ------------------------------------------------------------
+let sequences = [];
+let activeSequence = null;  // { name, steps, loop, stepIndex, timer }
+
+async function loadSequences() {
+    try {
+        const resp = await fetch('sequences.json', { cache: 'no-store' });
+        if (!resp.ok) throw new Error(resp.status);
+        sequences = await resp.json();
+    } catch {
+        sequences = [];
+    }
+    renderSequences();
+}
+
+function renderSequences() {
+    const grid = document.getElementById('seqGrid');
+    grid.innerHTML = '';
+
+    if (sequences.length === 0) {
+        grid.innerHTML = '<p style="color:#999;">No sequences found. Create a <code>sequences.json</code> file.</p>';
+        return;
+    }
+
+    sequences.forEach(seq => {
+        const card = document.createElement('div');
+        card.className = 'seq-card';
+        card.id = 'seq-card-' + seq.name.replace(/\s+/g, '-');
+
+        const totalTime = seq.steps.reduce((s, st) => s + st.delay, 0);
+        const stepList = seq.steps.map((st, i) =>
+            `${i + 1}. Preset ${st.preset}` + (st.label ? ` (${st.label})` : '') + (st.delay > 0 ? ` — ${st.delay}s` : '')
+        ).join('<br>');
+
+        card.innerHTML =
+            '<div class="seq-card-header">' +
+                '<span class="seq-card-name">' + escapeHtml(seq.name) + '</span>' +
+                (seq.loop ? '<span class="seq-loop-badge">&#x1f501; Loop</span>' : '') +
+            '</div>' +
+            '<div class="seq-card-meta">' +
+                seq.steps.length + ' step' + (seq.steps.length !== 1 ? 's' : '') +
+                (totalTime > 0 ? ' &middot; ' + totalTime + 's per cycle' : '') +
+            '</div>' +
+            '<div class="seq-card-steps">' + stepList + '</div>' +
+            '<button class="seq-play-btn" data-seq="' + escapeHtml(seq.name) + '" onclick="toggleSequence(this)">&#9654; Play</button>';
+
+        grid.appendChild(card);
+    });
+}
+
+function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function toggleSequence(btn) {
+    const name = btn.getAttribute('data-seq');
+
+    // If this sequence is already running, stop it
+    if (activeSequence && activeSequence.name === name) {
+        stopSequence();
+        return;
+    }
+
+    // Stop any other running sequence first
+    if (activeSequence) stopSequence();
+
+    const seq = sequences.find(s => s.name === name);
+    if (!seq) return;
+
+    activeSequence = {
+        name: seq.name,
+        steps: seq.steps,
+        loop: seq.loop,
+        stepIndex: 0,
+        timer: null
+    };
+
+    // Update button states
+    document.querySelectorAll('.seq-play-btn').forEach(b => {
+        b.classList.remove('running');
+        b.innerHTML = '&#9654; Play';
+    });
+    btn.classList.add('running');
+    btn.innerHTML = '&#9632; Stop';
+
+    // Show status bar
+    showStatus();
+    runStep();
+}
+
+function runStep() {
+    if (!activeSequence) return;
+
+    const { steps, stepIndex, loop } = activeSequence;
+
+    if (stepIndex >= steps.length) {
+        if (loop) {
+            activeSequence.stepIndex = 0;
+            runStep();
+        } else {
+            stopSequence();
+        }
+        return;
+    }
+
+    const step = steps[stepIndex];
+    goToPreset(step.preset);
+    updateStatus();
+
+    if (step.delay > 0) {
+        activeSequence.timer = setTimeout(() => {
+            if (!activeSequence) return;
+            activeSequence.stepIndex++;
+            runStep();
+        }, step.delay * 1000);
+    } else if (stepIndex < steps.length - 1) {
+        // No delay but more steps — short pause for camera to acknowledge
+        activeSequence.timer = setTimeout(() => {
+            if (!activeSequence) return;
+            activeSequence.stepIndex++;
+            runStep();
+        }, 500);
+    } else {
+        // Last step, no delay
+        if (loop) {
+            activeSequence.timer = setTimeout(() => {
+                if (!activeSequence) return;
+                activeSequence.stepIndex = 0;
+                runStep();
+            }, 500);
+        } else {
+            stopSequence();
+        }
+    }
+}
+
+function stopSequence() {
+    if (activeSequence && activeSequence.timer) {
+        clearTimeout(activeSequence.timer);
+    }
+    activeSequence = null;
+
+    // Reset all buttons
+    document.querySelectorAll('.seq-play-btn').forEach(b => {
+        b.classList.remove('running');
+        b.innerHTML = '&#9654; Play';
+    });
+
+    // Hide status
+    document.getElementById('seqStatus').classList.remove('active');
+}
+
+function showStatus() {
+    const status = document.getElementById('seqStatus');
+    status.classList.add('active');
+    updateStatus();
+}
+
+function updateStatus() {
+    if (!activeSequence) return;
+
+    document.getElementById('seqStatusName').textContent = activeSequence.name;
+    document.getElementById('seqStatusBadge').textContent =
+        'Step ' + (activeSequence.stepIndex + 1) + ' of ' + activeSequence.steps.length +
+        (activeSequence.loop ? ' (looping)' : '');
+
+    const progress = document.getElementById('seqStepsProgress');
+    progress.innerHTML = '';
+    activeSequence.steps.forEach((step, i) => {
+        const pip = document.createElement('span');
+        pip.className = 'seq-step-pip';
+        pip.textContent = 'P' + step.preset;
+        if (i < activeSequence.stepIndex) pip.classList.add('done');
+        if (i === activeSequence.stepIndex) pip.classList.add('active');
+        progress.appendChild(pip);
+    });
+}
+
+// Load sequences on page init
+loadSequences();
 
 // Start in MJPEG mode
 switchToMJPEG();

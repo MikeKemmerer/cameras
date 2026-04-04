@@ -1,0 +1,27 @@
+[
+    {
+        "name": "Wide Cycle",
+        "loop": true,
+        "steps": [
+            { "preset": 1, "delay": 15, "label": "Full zoom out" },
+            { "preset": 3, "delay": 15, "label": "Standard view" },
+            { "preset": 5, "delay": 10, "label": "Up close Altar" }
+        ]
+    },
+    {
+        "name": "Sermon",
+        "loop": false,
+        "steps": [
+            { "preset": 4, "delay": 0, "label": "Lectern (Homily)" }
+        ]
+    },
+    {
+        "name": "Pre-Service Rotation",
+        "loop": true,
+        "steps": [
+            { "preset": 6, "delay": 20, "label": "Icon above doors" },
+            { "preset": 16, "delay": 20, "label": "Saint Demetrios" },
+            { "preset": 1, "delay": 15, "label": "Full zoom out" }
+        ]
+    }
+]

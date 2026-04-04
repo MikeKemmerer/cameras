@@ -7,3 +7,6 @@ multicamera/config/cameras.json
 # Camera preset images (site-specific photos)
 cameracontrol/images/
 multicamera/thumbnails/
+
+# User-specific sequence routines
+cameracontrol/sequences.json
