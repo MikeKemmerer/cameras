@@ -9,21 +9,92 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 
 <style>
+    /* === LIGHT MODE (default) === */
+    :root {
+        --bg: #f5f5f5;
+        --fg: #222;
+        --panel: white;
+        --accent: #0078d4;
+        --accent-hover: #005fa3;
+        --header-bg: #0078d4;
+        --header-fg: white;
+        --tab-bg: #e0e0e0;
+        --tab-fg: #555;
+        --tab-hover: #d0d0d0;
+        --tab-active-bg: #f5f5f5;
+        --card-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        --card-border: transparent;
+        --card-hover-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        --pip-bg: #f0f0f0;
+        --pip-fg: #888;
+        --pip-done-bg: #d4edda;
+        --pip-done-fg: #155724;
+        --badge-bg: #e8f4fd;
+        --meta-fg: #777;
+        --steps-fg: #999;
+        --loop-fg: #555;
+        --thumb-switch-bg: #aaa;
+        --thumb-knob: white;
+        --next-bg: #28a745;
+        --next-fg: white;
+        --next-hover: #218838;
+        --stop-bg: #d64045;
+        --stop-hover: #b33438;
+    }
+
+    /* === DARK MODE === */
+    body.dark {
+        --bg: #111;
+        --fg: #eee;
+        --panel: #1b1b1b;
+        --accent: #3fa9f5;
+        --accent-hover: #5ab8f7;
+        --header-bg: #1b1b1b;
+        --header-fg: #eee;
+        --tab-bg: #0d0d0d;
+        --tab-fg: #888;
+        --tab-hover: #1a1a1a;
+        --tab-active-bg: #111;
+        --card-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        --card-border: #000;
+        --card-hover-shadow: 0 0 10px var(--accent), 0 0 6px var(--accent) inset, 0 2px 4px rgba(0,0,0,0.6);
+        --pip-bg: #222;
+        --pip-fg: #888;
+        --pip-done-bg: #1a3d1a;
+        --pip-done-fg: #6fcf6f;
+        --badge-bg: rgba(63,169,245,0.15);
+        --meta-fg: #888;
+        --steps-fg: #666;
+        --loop-fg: #999;
+        --thumb-switch-bg: #444;
+        --thumb-knob: #ccc;
+        --next-bg: #1a5a2a;
+        --next-fg: #6fcf6f;
+        --next-hover: #247a38;
+        --stop-bg: #5a1a1d;
+        --stop-hover: #7a2428;
+    }
+
     body {
         margin: 0;
         font-family: sans-serif;
-        background: #f5f5f5;
+        background: var(--bg);
+        color: var(--fg);
     }
 
     header {
-        background: #0078d4;
-        color: white;
+        background: var(--header-bg);
+        color: var(--header-fg);
         padding: 12px 20px;
         display: flex;
         justify-content: space-between;
         align-items: center;
         gap: 10px;
         flex-wrap: wrap;
+    }
+
+    body.dark header {
+        border-bottom: 2px solid var(--accent);
     }
 
     .header-left h2 {
@@ -39,6 +110,10 @@
     .layout {
         display: flex;
         height: calc(100vh - 60px);
+    }
+
+    body.dark .layout {
+        height: calc(100vh - 70px);
     }
 
     .preview {
@@ -62,11 +137,11 @@
     }
 
     .preset {
-        background: white;
+        background: var(--panel);
         padding: 10px 12px;
         border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-        border: 2px solid transparent;
+        box-shadow: var(--card-shadow);
+        border: 2px solid var(--card-border);
         cursor: pointer;
         display: flex;
         flex-direction: column;
@@ -75,8 +150,8 @@
     }
 
     .preset:hover {
-        border-color: #0078d4;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        border-color: var(--accent);
+        box-shadow: var(--card-hover-shadow);
         transform: translateY(-1px);
     }
 
@@ -88,6 +163,7 @@
     .preset-label {
         font-size: 15px;
         font-weight: 600;
+        color: var(--fg);
         text-align: left;
     }
 
@@ -96,14 +172,25 @@
         font-size: 14px;
         border: none;
         border-radius: 6px;
-        background: #0078d4;
+        background: var(--accent);
         color: white;
         cursor: pointer;
         white-space: nowrap;
     }
 
     button:hover {
-        background: #005fa3;
+        background: var(--accent-hover);
+    }
+
+    body.dark button {
+        background: #222;
+        border: 1px solid #000;
+        box-shadow: 0 0 0 1px var(--accent), 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    body.dark button:hover {
+        background: #333;
+        box-shadow: 0 0 10px var(--accent), 0 0 6px var(--accent) inset, 0 2px 4px rgba(0,0,0,0.6);
     }
 
     /* Thumbnail toggle */
@@ -115,8 +202,56 @@
     .tab-bar {
         display: flex;
         gap: 0;
-        background: #e0e0e0;
-        border-bottom: 2px solid #0078d4;
+        background: var(--tab-bg);
+        border-bottom: 2px solid var(--accent);
+        align-items: center;
+    }
+
+    .tab-bar .spacer {
+        flex: 1;
+    }
+
+    .tab-toggle {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-right: 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--tab-fg);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .tab-toggle .switch {
+        position: relative;
+        width: 34px;
+        height: 18px;
+        background: var(--thumb-switch-bg);
+        border-radius: 9px;
+        transition: background 0.2s;
+    }
+
+    .tab-toggle .switch::after {
+        content: '';
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        background: var(--thumb-knob);
+        border-radius: 50%;
+        transition: transform 0.2s;
+    }
+
+    .tab-toggle input { display: none; }
+
+    .tab-toggle input:checked + .switch {
+        background: var(--accent);
+    }
+
+    .tab-toggle input:checked + .switch::after {
+        transform: translateX(16px);
     }
 
     .tab-btn {
@@ -124,21 +259,21 @@
         font-size: 14px;
         font-weight: 600;
         border: none;
-        background: #e0e0e0;
-        color: #555;
+        background: var(--tab-bg);
+        color: var(--tab-fg);
         cursor: pointer;
         border-bottom: 3px solid transparent;
         transition: background 0.15s, color 0.15s;
     }
 
     .tab-btn:hover {
-        background: #d0d0d0;
+        background: var(--tab-hover);
     }
 
     .tab-btn.active {
-        background: #f5f5f5;
-        color: #0078d4;
-        border-bottom-color: #0078d4;
+        background: var(--tab-active-bg);
+        color: var(--accent);
+        border-bottom-color: var(--accent);
     }
 
     .tab-panel {
@@ -157,12 +292,16 @@
     }
 
     .seq-status {
-        background: white;
+        background: var(--panel);
         border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        box-shadow: var(--card-shadow);
         padding: 16px;
         margin-bottom: 16px;
         display: none;
+    }
+
+    body.dark .seq-status {
+        border: 1px solid #000;
     }
 
     .seq-status.active {
@@ -174,20 +313,43 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 10px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .seq-loop-toggle {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        color: var(--loop-fg);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .seq-loop-toggle.visible {
+        display: flex;
+    }
+
+    .seq-loop-toggle input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+        accent-color: var(--accent);
     }
 
     .seq-status-name {
         font-size: 16px;
         font-weight: 700;
-        color: #0078d4;
+        color: var(--accent);
     }
 
     .seq-status-badge {
         font-size: 12px;
         padding: 3px 10px;
         border-radius: 12px;
-        background: #e8f4fd;
-        color: #0078d4;
+        background: var(--badge-bg);
+        color: var(--accent);
         font-weight: 600;
     }
 
@@ -202,20 +364,25 @@
         padding: 4px 10px;
         border-radius: 4px;
         font-size: 12px;
-        background: #f0f0f0;
-        color: #888;
+        background: var(--pip-bg);
+        color: var(--pip-fg);
         transition: background 0.2s, color 0.2s;
     }
 
     .seq-step-pip.active {
-        background: #0078d4;
+        background: var(--accent);
         color: white;
         font-weight: 600;
     }
 
+    body.dark .seq-step-pip.active {
+        color: #000;
+        box-shadow: 0 0 8px var(--accent);
+    }
+
     .seq-step-pip.done {
-        background: #d4edda;
-        color: #155724;
+        background: var(--pip-done-bg);
+        color: var(--pip-done-fg);
     }
 
     .seq-next-btn {
@@ -225,13 +392,22 @@
         border: none;
         border-radius: 6px;
         cursor: pointer;
-        background: #28a745;
-        color: white;
+        background: var(--next-bg);
+        color: var(--next-fg);
         transition: background 0.15s;
     }
 
     .seq-next-btn:hover {
-        background: #218838;
+        background: var(--next-hover);
+    }
+
+    body.dark .seq-next-btn {
+        border: 1px solid #000;
+        box-shadow: 0 0 0 1px #28a745, 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    body.dark .seq-next-btn:hover {
+        box-shadow: 0 0 10px #28a745, 0 0 6px #28a745 inset, 0 2px 4px rgba(0,0,0,0.6);
     }
 
     .seq-grid {
@@ -241,17 +417,18 @@
     }
 
     .seq-card {
-        background: white;
+        background: var(--panel);
         border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        box-shadow: var(--card-shadow);
         padding: 16px;
-        border: 2px solid transparent;
-        transition: border 0.15s, box-shadow 0.15s;
+        border: 2px solid var(--card-border);
+        transition: border 0.15s, box-shadow 0.15s, transform 0.05s;
     }
 
     .seq-card:hover {
-        border-color: #0078d4;
-        box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+        border-color: var(--accent);
+        box-shadow: var(--card-hover-shadow);
+        transform: translateY(-1px);
     }
 
     .seq-card-header {
@@ -264,17 +441,18 @@
     .seq-card-name {
         font-size: 16px;
         font-weight: 700;
+        color: var(--fg);
     }
 
     .seq-card-meta {
         font-size: 13px;
-        color: #777;
+        color: var(--meta-fg);
         margin-bottom: 10px;
     }
 
     .seq-card-steps {
         font-size: 12px;
-        color: #999;
+        color: var(--steps-fg);
         margin-bottom: 12px;
         line-height: 1.5;
     }
@@ -292,13 +470,25 @@
         border: none;
         border-radius: 6px;
         cursor: pointer;
-        background: #0078d4;
+        background: var(--accent);
         color: white;
         transition: background 0.15s;
     }
 
     .seq-mode-btn:hover {
-        background: #005fa3;
+        background: var(--accent-hover);
+    }
+
+    body.dark .seq-mode-btn {
+        background: #222;
+        border: 1px solid #000;
+        border-radius: 4px;
+        box-shadow: 0 0 0 1px var(--accent), 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    body.dark .seq-mode-btn:hover {
+        background: #333;
+        box-shadow: 0 0 10px var(--accent), 0 0 6px var(--accent) inset, 0 2px 4px rgba(0,0,0,0.6);
     }
 
     /* Global stop button */
@@ -310,13 +500,21 @@
         border: none;
         border-radius: 6px;
         cursor: pointer;
-        background: #d64045;
+        background: var(--stop-bg);
         color: white;
         animation: pulse-stop 1.5s infinite;
     }
 
     #globalStopBtn:hover {
-        background: #b33438;
+        background: var(--stop-hover);
+    }
+
+    body.dark #globalStopBtn {
+        box-shadow: 0 0 0 1px #d64045, 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    body.dark #globalStopBtn:hover {
+        box-shadow: 0 0 10px #d64045, 0 0 6px #d64045 inset, 0 2px 4px rgba(0,0,0,0.6);
     }
 
     #globalStopBtn.visible {
@@ -359,8 +557,6 @@
     </div>
     <div class="header-right">        <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop Sequence</button>        <button onclick="switchToMJPEG()">MJPEG</button>
         <button onclick="switchToHLS()">HLS w/ 🔉</button>
-        <button onclick="toggleThumbnails()">Thumbnails</button>
-	<button onclick="requestWakeLock()">Keep Awake</button>
     </div>
 </header>
 
@@ -381,6 +577,17 @@
         <div class="tab-bar">
             <button class="tab-btn active" onclick="switchTab('presets')">Presets</button>
             <button class="tab-btn" onclick="switchTab('sequences')">Sequences</button>
+            <div class="spacer"></div>
+            <label class="tab-toggle">
+                <input type="checkbox" id="thumbToggle" checked onchange="toggleThumbnails()">
+                <span class="switch"></span>
+                Thumbs
+            </label>
+            <label class="tab-toggle">
+                <input type="checkbox" id="darkToggle" onchange="toggleDarkMode()">
+                <span class="switch"></span>
+                Dark
+            </label>
         </div>
 
         <div class="tab-panel active presets" id="presetPanel">
@@ -391,6 +598,9 @@
             <div class="seq-status" id="seqStatus">
                 <div class="seq-status-header">
                     <span class="seq-status-name" id="seqStatusName"></span>
+                    <label class="seq-loop-toggle" id="seqLoopToggle">
+                        <input type="checkbox" id="seqLoopCheckbox"> Loop
+                    </label>
                     <span class="seq-status-badge" id="seqStatusBadge"></span>
                 </div>
                 <div class="seq-steps-progress" id="seqStepsProgress"></div>
@@ -415,29 +625,7 @@
 //   ProxyPass        /cam/ptz http://CAMERA_IP/cgi-bin/aw_ptz
 //   ProxyPassReverse /cam/ptz http://CAMERA_IP/cgi-bin/aw_ptz
 
-// Wake Lock
-let wakeLock = null;
-
-async function requestWakeLock() {
-  try {
-    wakeLock = await navigator.wakeLock.request("screen");
-
-    wakeLock.addEventListener("release", () => {
-      console.log("Wake Lock was released");
-    });
-
-    console.log("Wake Lock is active");
-  } catch (err) {
-    console.error(`${err.name}, ${err.message}`);
-  }
-}
-
-// Re-request if the tab becomes visible again
-document.addEventListener("visibilitychange", () => {
-  if (wakeLock !== null && document.visibilityState === "visible") {
-    requestWakeLock();
-  }
-});
+// Wake Lock removed
 
 
 const LIVE_URL = "/mjpeg";            // proxied MJPEG
@@ -527,6 +715,18 @@ function switchToHLS() {
 // ------------------------------------------------------------
 function toggleThumbnails() {
     document.body.classList.toggle("hide-thumbs");
+}
+
+function toggleDarkMode() {
+    const isDark = document.getElementById('darkToggle').checked;
+    document.body.classList.toggle('dark', isDark);
+    localStorage.setItem('darkMode', isDark ? '1' : '0');
+}
+
+// Restore dark mode preference
+if (localStorage.getItem('darkMode') === '1') {
+    document.body.classList.add('dark');
+    document.getElementById('darkToggle').checked = true;
 }
 
 // ------------------------------------------------------------
@@ -632,6 +832,14 @@ function startSequence(btn) {
     };
 
     document.getElementById('globalStopBtn').classList.add('visible');
+    const loopToggle = document.getElementById('seqLoopToggle');
+    const loopCheckbox = document.getElementById('seqLoopCheckbox');
+    if (mode === 'auto') {
+        loopToggle.classList.add('visible');
+        loopCheckbox.checked = false;
+    } else {
+        loopToggle.classList.remove('visible');
+    }
     showStatus();
     executeStep();
 }
@@ -683,10 +891,15 @@ function advanceStep() {
         }
         executeStep();
     } else {
-        // Full auto — advance forward, loop at end
+        // Full auto — advance forward; loop only if toggle is on
         activeSequence.stepIndex++;
         if (activeSequence.stepIndex >= steps.length) {
-            activeSequence.stepIndex = 0;
+            if (document.getElementById('seqLoopCheckbox').checked) {
+                activeSequence.stepIndex = 0;
+            } else {
+                stopSequence();
+                return;
+            }
         }
         executeStep();
     }
@@ -727,6 +940,7 @@ function stopSequence() {
     document.getElementById('globalStopBtn').classList.remove('visible');
     document.getElementById('seqStatus').classList.remove('active');
     document.getElementById('seqNextArea').innerHTML = '';
+    document.getElementById('seqLoopToggle').classList.remove('visible');
 }
 
 function showStatus() {
