@@ -1,0 +1,7 @@
+[
+    { "number": 1,  "label": "Wide shot",           "image": "images/preset1.jpg" },
+    { "number": 2,  "label": "Medium shot",          "image": "images/preset2.jpg" },
+    { "number": 3,  "label": "Close-up",             "image": "images/preset3.jpg" },
+    { "number": 4,  "label": "Podium",               "image": "images/preset4.jpg" },
+    { "number": 5,  "label": "Altar",                "image": "images/preset5.jpg" }
+]

@@ -467,49 +467,29 @@ body.hide-thumbs .preset img {
 const LIVE_URL = "/mjpeg";
 const HLS_URL  = "/hls/2.m3u8";
 
-const PRESETS = [
-  { number: 1,  label: "Full zoom out",                     image: "images/preset1.jpg" },
-  { number: 2,  label: "Slightly zoomed in",                image: "images/preset2.jpg" },
-  { number: 3,  label: "Standard view",                     image: "images/preset3.jpg" },
-  { number: 4,  label: "Lectern (Homily)",                  image: "images/preset4.jpg" },
-  { number: 5,  label: "Up close Altar",                    image: "images/preset5.jpg" },
-  { number: 6,  label: "Icon above doors",                  image: "images/preset6.jpg" },
-  { number: 7,  label: "Baptismal font",                    image: "images/preset7.jpg" },
-  { number: 8,  label: "Choir loft",                        image: "images/none.jpg" },
-  { number: 9,  label: "Center aisle",                      image: "images/preset9.jpg" },
-  { number: 10, label: "Low announcements",                 image: "images/preset10.jpg" },
-  { number: 11, label: "Michael to canter",                 image: "images/preset11.jpg" },
-  { number: 12, label: "Closing announcements",             image: "images/preset12.jpg" },
-  { number: 13, label: "Memorial service",                  image: "images/preset13.jpg" },
-  { number: 14, label: "Choir Loft 2",                      image: "images/none.jpg" },
-  { number: 15, label: "Chanter",                           image: "images/preset15.jpg" },
-  { number: 16, label: "Saint Demetrios",                   image: "images/preset16.jpg" },
-  { number: 17, label: "Lectern to Gabriel",                image: "images/preset17.jpg" },
-  { number: 18, label: "Left Aisle",                        image: "images/preset18.jpg" },
-  { number: 19, label: "Right Aisle",                       image: "images/preset19.jpg" },
-  { number: 20, label: "Low center icon on easel",          image: "images/preset20.jpg" },
-  { number: 21, label: "Choir Loft 3 (canter side)",        image: "images/none.jpg" },
-  { number: 22, label: "Choir Loft 4 (forward - Pascha)",   image: "images/preset22.jpg" }
-];
+// Load presets from config & build grid
+fetch('presets.json')
+  .then(r => r.json())
+  .then(presets => {
+    const grid = document.getElementById("presetGrid");
+    presets.forEach(preset => {
+      const div = document.createElement("div");
+      div.className = "preset";
+      div.onclick = function() { goToPreset(preset.number, this); };
 
-const grid = document.getElementById("presetGrid");
+      const img = document.createElement("img");
+      img.src = preset.image;
 
-PRESETS.forEach(preset => {
-  const div = document.createElement("div");
-  div.className = "preset";
-  div.onclick = function() { goToPreset(preset.number, this); };
+      const label = document.createElement("div");
+      label.className = "preset-label";
+      label.textContent = `${preset.number} — ${preset.label}`;
 
-  const img = document.createElement("img");
-  img.src = preset.image;
-
-  const label = document.createElement("div");
-  label.className = "preset-label";
-  label.textContent = `${preset.number} — ${preset.label}`;
-
-  div.appendChild(img);
-  div.appendChild(label);
-  grid.appendChild(div);
-});
+      div.appendChild(img);
+      div.appendChild(label);
+      grid.appendChild(div);
+    });
+  })
+  .catch(err => console.error('Failed to load presets:', err));
 
 function goToPreset(num, btn) {
   // Manual preset selection stops any running sequence

@@ -10,3 +10,6 @@ multicamera/thumbnails/
 
 # User-specific sequence routines
 cameracontrol/sequences.json
+
+# User-specific preset definitions
+cameracontrol/presets.json
