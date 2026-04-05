@@ -597,49 +597,61 @@
         }
     }
 
-    /* === SPEED SELECTOR === */
-    .speed-selector {
+    /* === SPEED SLIDER === */
+    .speed-slider {
         display: flex;
         align-items: center;
-        gap: 0;
+        gap: 8px;
         margin-right: 14px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
+        min-width: 0;
     }
-    .speed-selector .speed-label {
+    .speed-slider .speed-label {
         color: var(--tab-fg);
-        margin-right: 6px;
         white-space: nowrap;
     }
-    .speed-selector input { display: none; }
-    .speed-selector label {
-        padding: 3px 10px;
-        color: var(--tab-fg);
-        background: var(--tab-bg);
+    .speed-slider .speed-track {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        min-width: 80px;
+        width: 100px;
+    }
+    .speed-slider input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--thumb-switch-bg);
+        outline: none;
         cursor: pointer;
-        border: 1px solid var(--thumb-switch-bg);
-        border-right: none;
-        transition: background 0.15s, color 0.15s;
-        user-select: none;
-        white-space: nowrap;
+        margin: 0;
     }
-    .speed-selector label:first-of-type {
-        border-radius: 4px 0 0 4px;
-    }
-    .speed-selector label:last-of-type {
-        border-radius: 0 4px 4px 0;
-        border-right: 1px solid var(--thumb-switch-bg);
-    }
-    .speed-selector label:hover {
-        background: var(--tab-hover);
-    }
-    .speed-selector input:checked + label {
+    .speed-slider input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
         background: var(--accent);
-        color: var(--header-fg);
-        border-color: var(--accent);
+        border: 2px solid var(--header-fg);
+        cursor: pointer;
     }
-    .speed-selector input:checked + label + input + label {
-        border-left-color: var(--accent);
+    .speed-slider input[type="range"]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--header-fg);
+        cursor: pointer;
+    }
+    .speed-slider .speed-value {
+        color: var(--tab-fg);
+        white-space: nowrap;
+        min-width: 3.5em;
+        text-align: center;
     }
 
     /* === SETTINGS DROPDOWN === */
@@ -710,16 +722,12 @@
             <button class="tab-btn active" onclick="switchTab('presets')">Presets</button>
             <button class="tab-btn" onclick="switchTab('sequences')">Sequences</button>
             <div class="spacer"></div>
-            <div class="speed-selector">
+            <div class="speed-slider">
                 <span class="speed-label">Speed</span>
-                <input type="radio" name="presetSpeed" id="speedSlow" value="450" onchange="setPresetSpeed(this.value)">
-                <label for="speedSlow">Slow</label>
-                <input type="radio" name="presetSpeed" id="speedMed" value="550" onchange="setPresetSpeed(this.value)">
-                <label for="speedMed">Med</label>
-                <input type="radio" name="presetSpeed" id="speedFast" value="650" onchange="setPresetSpeed(this.value)">
-                <label for="speedFast">Fast</label>
-                <input type="radio" name="presetSpeed" id="speedXFast" value="750" onchange="setPresetSpeed(this.value)">
-                <label for="speedXFast">X-Fast</label>
+                <div class="speed-track">
+                    <input type="range" id="speedRange" min="0" max="3" step="1" value="1" oninput="onSpeedSlider(this.value)">
+                </div>
+                <span class="speed-value" id="speedValueLabel">Med</span>
             </div>
             <div class="settings-wrap">
                 <button class="settings-btn" onclick="toggleSettings()" title="Settings">&#9881;</button>
@@ -890,9 +898,17 @@ function toggleDarkMode() {
 // ------------------------------------------------------------
 // PRESET SPEED SELECTOR
 // ------------------------------------------------------------
-function setPresetSpeed(speed) {
-    localStorage.setItem('presetSpeed', speed);
-    fetch('/cam/ptz?cmd=%23UPVS' + speed + '&res=1').catch(() => {});
+var speedSteps = [
+    { value: '450', label: 'Slow' },
+    { value: '550', label: 'Med' },
+    { value: '650', label: 'Fast' },
+    { value: '750', label: 'X-Fast' }
+];
+function onSpeedSlider(idx) {
+    var step = speedSteps[idx];
+    document.getElementById('speedValueLabel').textContent = step.label;
+    localStorage.setItem('presetSpeed', step.value);
+    fetch('/cam/ptz?cmd=%23UPVS' + step.value + '&res=1').catch(function(){});
 }
 
 // Restore preferences
@@ -905,10 +921,12 @@ if (localStorage.getItem('showThumbs') === '0') {
     document.getElementById('thumbToggle').checked = false;
 }
 (function restorePresetSpeed() {
-    const saved = localStorage.getItem('presetSpeed') || '550';
-    const radio = document.querySelector('input[name="presetSpeed"][value="' + saved + '"]');
-    if (radio) radio.checked = true;
-    fetch('/cam/ptz?cmd=%23UPVS' + saved + '&res=1').catch(() => {});
+    var saved = localStorage.getItem('presetSpeed') || '550';
+    var idx = speedSteps.findIndex(function(s) { return s.value === saved; });
+    if (idx < 0) idx = 1;
+    document.getElementById('speedRange').value = idx;
+    document.getElementById('speedValueLabel').textContent = speedSteps[idx].label;
+    fetch('/cam/ptz?cmd=%23UPVS' + saved + '&res=1').catch(function(){});
 })();
 
 // ------------------------------------------------------------
