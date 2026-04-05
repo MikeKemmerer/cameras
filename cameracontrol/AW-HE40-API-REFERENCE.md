@@ -505,10 +505,302 @@ A virtual joystick for manual camera control would work by mapping pointer/touch
 - **On release**: send `#PTS5050` to stop all movement
 - **Throttle**: limit to ~10 commands per second to avoid overwhelming the camera. The camera processes commands sequentially, so flooding it causes laggy, jerky movement
 
+### Batch Commands Across Multiple Cameras
+
+In the multicamera setup, the same command can be sent to all four cameras by looping over their IPs using the existing dynamic proxy pattern. For example, to set all cameras to the same preset speed or power them all on before a service:
+
+```javascript
+const cameraIPs = ['172.25.0.200', '172.25.0.201', '172.25.0.202', '172.25.0.203'];
+
+// Power on all cameras
+cameraIPs.forEach(ip => {
+    fetch(`/multicamera/cam/${ip}/ptz?cmd=%23O1&res=1`).catch(() => {});
+});
+
+// Set all cameras to preset speed 12
+cameraIPs.forEach(ip => {
+    fetch(`/multicamera/cam/${ip}/ptz?cmd=%23UPVS550&res=1`).catch(() => {});
+});
+```
+
+The IP list could come from `multicamera/config/cameras.json`, which already defines camera IPs for the multi-camera interface.
+
+---
+
+## Status Queries and Camera State
+
+The camera can report its current state, which is useful for building a UI that reflects what's actually happening (e.g., showing which preset is active, whether auto-focus is on, or if the camera is even powered up).
+
+### Polling via HTTP — camdata.html
+
+The simplest way to get the camera's current state is to fetch its status page. The camera exposes a page at `/live/camdata.html` that returns all current settings as colon-separated key-value pairs, one per line. This is the same page the Companion module uses for initial state discovery.
+
+```
+GET /live/camdata.html
+```
+
+The response is plain text with lines like:
+```
+OID:AW-HE40
+TITLE:Camera 1
+p1                    (power is ON; "p0" means OFF)
+iNS0                  (desktop mount; "iNS1" means hanging)
+dA0                   (tally OFF; "dA1" means ON)
+d30                   (auto iris; "d31" means manual)
+OAF:1                 (auto focus ON; "OAF:0" means manual)
+OGU:08                (gain at 0 dB)
+OSE:71:0              (preset mode A)
+DCB:0                 (color bars OFF)
+qSV3:x.xx             (firmware version)
+```
+
+To fetch this through our proxy, you'd need a new proxy path or fetch it directly. In our Apache config, this could be added as:
+```apache
+ProxyPass        /cam/status  http://172.25.0.200/live/camdata.html
+ProxyPassReverse /cam/status  http://172.25.0.200/live/camdata.html
+```
+
+Then in JavaScript:
+```javascript
+fetch('/cam/status')
+    .then(r => r.text())
+    .then(text => {
+        const lines = text.split('\r\n');
+        lines.forEach(line => {
+            const parts = line.trim().split(':');
+            // parts[0] is the key, parts[1] is the value
+            // e.g., ["OAF", "1"] or ["p1"]
+        });
+    });
+```
+
+### Event Subscription via TCP
+
+For real-time updates (as opposed to polling), the camera supports a TCP event subscription model. You send an HTTP request to subscribe, then the camera pushes state changes to your TCP port whenever something changes (preset recalled, focus mode changed, power state, tally, etc.).
+
+**Subscribe:**
+```
+GET /cgi-bin/event?connect=start&my_port=<PORT>&uid=0
+```
+
+**Unsubscribe:**
+```
+GET /cgi-bin/event?connect=stop&my_port=<PORT>&uid=0
+```
+
+The camera then sends newline-delimited messages to your TCP server in the same colon-separated format as camdata.html. This is how the Bitfocus Companion module stays in sync with the camera in real time.
+
+> Note: Implementing TCP event subscription in a browser-based app would require a WebSocket bridge running server-side. For a simpler approach, polling camdata.html every few seconds is sufficient for most UI feedback needs.
+
+### Error Codes
+
+When a command fails, the camera responds with an error code instead of the normal acknowledgment. The response starts with `rER` followed by a 2-digit error code.
+
+| Response | Meaning |
+|----------|---------|
+| `rER00` | No error (success) |
+| `rER02` | Busy (camera is executing another command) |
+| `rER03` | Command not supported on this model |
+| `rER04` | Illegal parameter value |
+| `rER10` | Camera is in standby mode (send power-on first) |
+
+In JavaScript, you can check for errors by reading the response text:
+```javascript
+fetch('/cam/ptz?cmd=%23R00&res=1')
+    .then(r => r.text())
+    .then(text => {
+        if (text.includes('rER')) {
+            console.error('Camera error:', text.trim());
+        }
+    });
+```
+
+---
+
+## Network Discovery and Identification
+
+These commands help identify and monitor cameras on the network — useful for building a status dashboard or verifying that all cameras are online before a service.
+
+### Firmware Version
+
+The camera reports its firmware version in camdata.html as `qSV3:x.xx`. This can also be retrieved individually, though the camdata.html approach is simpler since you get everything at once.
+
+### Model Identification
+
+The camera reports its model via the `OID` field in camdata.html:
+```
+OID:AW-HE40
+```
+
+### Camera Name
+
+Each camera can be given a name through its setup menu (or the built-in web interface). It's reported as:
+```
+TITLE:Camera 1
+```
+
+### Simple Health Check
+
+The quickest way to check if a camera is online and responsive is to send any query and see if you get a response. A lightweight option:
+```javascript
+// Returns fast, camera responds with its power state
+fetch('/cam/ptz?cmd=%23O&res=1', { signal: AbortSignal.timeout(3000) })
+    .then(r => r.ok ? 'online' : 'error')
+    .catch(() => 'offline');
+```
+
+For a multi-camera dashboard, run this against each camera IP:
+```javascript
+const cameraIPs = ['172.25.0.200', '172.25.0.201', '172.25.0.202', '172.25.0.203'];
+
+async function checkAllCameras() {
+    const results = await Promise.all(
+        cameraIPs.map(ip =>
+            fetch(`/multicamera/cam/${ip}/ptz?cmd=%23O&res=1`, {
+                signal: AbortSignal.timeout(3000)
+            })
+            .then(r => ({ ip, status: r.ok ? 'online' : 'error' }))
+            .catch(() => ({ ip, status: 'offline' }))
+        )
+    );
+    return results;
+}
+```
+
+---
+
+## Tally Integration with Video Switcher
+
+In our setup, the Crestron video switcher (proxied at `/multicamera/switcher`) routes camera inputs to the program output. By combining switcher routing with tally commands, we can automatically light up the tally LED on whichever camera is currently live.
+
+The idea is straightforward: when you switch to camera N, send `#DA1` (tally on) to that camera and `#DA0` (tally off) to all the others. This could be added to the existing switcher button handler in the multicamera interface.
+
+```javascript
+const cameraIPs = ['172.25.0.200', '172.25.0.201', '172.25.0.202', '172.25.0.203'];
+
+function routeAndTally(cameraIndex) {
+    // Route camera to program output via Crestron switcher
+    fetch(`/multicamera/switcher/route?input=${cameraIndex}&output=1`);
+
+    // Set tally lights — ON for active camera, OFF for all others
+    cameraIPs.forEach((ip, i) => {
+        const tallyCmd = (i === cameraIndex - 1) ? 'DA1' : 'DA0';
+        fetch(`/multicamera/cam/${ip}/ptz?cmd=%23${tallyCmd}&res=1`).catch(() => {});
+    });
+}
+
+// Example: switch to camera 2 and update tally lights
+routeAndTally(2);
+```
+
+---
+
+## Camera Web UI Proxy
+
+The AW-HE40 has a built-in web interface for advanced configuration that's normally accessed by browsing directly to the camera's IP address. In our setup, this is proxied through `liturgystream2:8081`, so the camera's control page is available at:
+
+```
+http://liturgystream2:8081/live/index.html
+```
+
+This built-in web UI provides access to settings that aren't available through the CGI commands, such as:
+- Network configuration (IP address, subnet, gateway)
+- Video output format (resolution, frame rate)
+- Encoding settings (bitrate, compression)
+- OSD (on-screen display) configuration
+- Detailed image adjustments (detail level, chroma, matrix)
+- User management and passwords
+- Firmware updates
+
+To link to the camera's web UI from the control page, or embed it in an iframe:
+```html
+<!-- Link to camera's built-in admin page -->
+<a href="http://liturgystream2:8081/live/index.html" target="_blank">Camera Settings</a>
+
+<!-- Or embed in an iframe -->
+<iframe src="http://liturgystream2:8081/live/index.html" width="100%" height="600"></iframe>
+```
+
+> Note: The built-in web UI may require admin credentials for some settings. The CGI commands documented in this file do not require authentication.
+
+---
+
+## Image Adjustment Commands
+
+Beyond basic exposure (gain, shutter, iris), the camera has several image quality settings that can be adjusted via CGI. These are particularly relevant for environments with changing lighting — bright Sunday mornings vs. dim evening services vs. candlelight at Christmas/Easter.
+
+### Detail Level
+
+Controls the sharpness/edge enhancement of the image. Higher values make the image appear sharper but can introduce artifacts.
+
+Command via **aw_cam**:
+```
+OSD:48:<HH>     → Set detail level (hex value)
+```
+
+### Chroma Level
+
+Adjusts color saturation. Lower values move toward black-and-white, higher values produce more vivid colors.
+
+Command via **aw_cam**:
+```
+OSD:49:<HH>     → Set chroma level (hex value)
+```
+
+### Scene Files
+
+The camera can store multiple "scene files" — complete image profiles that include all picture settings (detail, chroma, matrix, pedestal, gain behavior, etc.). This is useful for saving different looks for different services or lighting conditions, then switching between them with a single command.
+
+Command via **aw_cam**:
+```
+XSF:1            → Load Scene File 1
+XSF:2            → Load Scene File 2
+XSF:3            → Load Scene File 3
+XSF:4            → Load Scene File 4
+```
+
+> Note: Scene file selection is listed as unsupported on the HE40 in the companion module's feature matrix. However, it may work on HE40 firmware versions that support it — worth testing. If it doesn't work, scene-specific adjustments would need to be made via individual commands (detail, chroma, pedestal, etc.) or through the camera's built-in web UI.
+
+### Day/Night Mode
+
+Some Panasonic PTZ cameras support an infrared night mode that removes the IR cut filter, allowing the camera to see in very low light (image becomes black-and-white). The HE40 may support this through the OSD menu system, though it's not exposed as a dedicated CGI command in the companion module. If available, it would typically be controlled through:
+
+```
+OSE:xx:yy        → Day/night mode toggle (exact parameters model-dependent)
+```
+
+This would need to be tested on the actual hardware or verified through the camera's web UI at `liturgystream2:8081/live/index.html`.
+
+---
+
+## Streaming Configuration
+
+The camera's video output settings (resolution, encoding, bitrate) can be configured through the built-in web UI. While detailed encoding parameters are typically set once during installation, here are the relevant CGI paths for querying the current configuration:
+
+### Current Video Format
+
+```
+GET /live/camdata.html
+```
+
+The response includes video format information that can be used to verify the camera is outputting the expected resolution and frame rate.
+
+### Streaming Endpoints
+
+The camera outputs video in several formats simultaneously:
+
+| Format | URL | Notes |
+|--------|-----|-------|
+| MJPEG | `/cgi-bin/mjpeg` | Low latency, no audio, moderate bandwidth |
+| RTSP | `rtsp://<camera-ip>/MediaInput/h264/stream_1` | H.264, full quality, includes audio |
+| HLS | Via external encoder | Not native to camera; our setup uses sdgocstream:8086 |
+
+The MJPEG stream is what we use for live preview in the control UI. The RTSP stream is typically what feeds the encoder/recorder for the actual broadcast.
+
 ---
 
 ## Sources
 
-- [Bitfocus Companion Module (panasonic-ptz)](https://github.com/bitfocus/companion-module-panasonic-ptz) — actions.js, choices.js, models.js
+- [Bitfocus Companion Module (panasonic-ptz)](https://github.com/bitfocus/companion-module-panasonic-ptz) — actions.js, choices.js, models.js, index.js, variables.js
 - [CUE Systems AW-HE40 Module (gist)](https://gist.github.com/teemupenttinen/b141a7342361b6af68dbf739c34eddb8)
 - Panasonic "HD/4K Integrated Camera Interface Specifications" v1.12 (Apr 2020) — [official docs portal](https://eww.pass.panasonic.co.jp/pro-av/support/content/guide/EN/top.html)
