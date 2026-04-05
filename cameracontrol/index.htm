@@ -479,6 +479,17 @@
         gap: 6px;
     }
 
+    .seq-speed-badge {
+        display: inline-block;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--thumb-switch-bg);
+        color: var(--fg);
+        margin-bottom: 10px;
+    }
+
     .seq-mode-btn {
         flex: 1;
         padding: 7px 4px;
@@ -994,6 +1005,8 @@ function renderSequences() {
         ).join('<br>');
 
         const safeName = escapeHtml(seq.name);
+        const seqSpeed = seq.speed || '550';
+        const seqSpeedLabel = getSpeedLabel(seqSpeed);
 
         card.innerHTML =
             '<div class="seq-card-header">' +
@@ -1003,6 +1016,7 @@ function renderSequences() {
                 seq.steps.length + ' step' + (seq.steps.length !== 1 ? 's' : '') +
                 (totalTime > 0 ? ' &middot; ' + totalTime + 's per cycle' : '') +
             '</div>' +
+            '<div class="seq-speed-badge">&#9201; ' + escapeHtml(seqSpeedLabel) + '</div>' +
             '<div class="seq-card-steps">' + stepList + '</div>' +
             '<div class="seq-mode-btns">' +
                 '<button class="seq-mode-btn" data-seq="' + safeName + '" data-mode="auto" onclick="startSequence(this)">&#9654; Full Auto</button>' +
@@ -1020,6 +1034,18 @@ function escapeHtml(str) {
     return d.innerHTML;
 }
 
+function getSpeedLabel(value) {
+    var match = speedSteps.find(function(s) { return s.value === value; });
+    return match ? match.label : 'Speed ' + value;
+}
+
+function applySpeed(value) {
+    var idx = speedSteps.findIndex(function(s) { return s.value === value; });
+    if (idx >= 0) document.getElementById('speedRange').value = idx;
+    localStorage.setItem('presetSpeed', value);
+    fetch('/cam/ptz?cmd=%23UPVS' + value + '&res=1').catch(function(){});
+}
+
 function startSequence(btn) {
     const name = btn.getAttribute('data-seq');
     const mode = btn.getAttribute('data-mode');
@@ -1029,6 +1055,21 @@ function startSequence(btn) {
 
     const seq = sequences.find(s => s.name === name);
     if (!seq || seq.steps.length === 0) return;
+
+    const seqSpeed = seq.speed || '550';
+    const currentSpeed = localStorage.getItem('presetSpeed') || '550';
+
+    if (currentSpeed !== seqSpeed) {
+        var seqLabel = getSpeedLabel(seqSpeed);
+        var curLabel = getSpeedLabel(currentSpeed);
+        if (confirm('This sequence defaults to ' + seqLabel + ' speed.\nYou have ' + curLabel + ' selected.\n\nKeep your current speed?')) {
+            // User wants to keep their speed — don't change it
+        } else {
+            applySpeed(seqSpeed);
+        }
+    } else {
+        applySpeed(seqSpeed);
+    }
 
     activeSequence = {
         name: seq.name,

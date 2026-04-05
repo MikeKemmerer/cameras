@@ -1,6 +1,7 @@
 [
     {
         "name": "Congregation Sweep",
+        "speed": "450",
         "steps": [
             { "preset": 18, "delay": 13, "label": "Left Aisle" },
             { "preset": 9, "delay": 12.2, "label": "Center aisle" },
@@ -9,6 +10,7 @@
     },
     {
         "name": "Great Entrance",
+        "speed": "450",
         "steps": [
             { "preset": 18, "delay": 18, "label": "Left Aisle" },
             { "preset": 9, "delay": 15, "label": "Center aisle" },
@@ -18,6 +20,7 @@
     },
     {
         "name": "Wide Cycle",
+        "speed": "550",
         "steps": [
             { "preset": 1, "delay": 15, "label": "Full zoom out" },
             { "preset": 3, "delay": 15, "label": "Standard view" },
@@ -26,6 +29,7 @@
     },
     {
         "name": "Pre-Service Rotation",
+        "speed": "450",
         "steps": [
             { "preset": 6, "delay": 20, "label": "Icon above doors" },
             { "preset": 16, "delay": 20, "label": "Saint Demetrios" },
