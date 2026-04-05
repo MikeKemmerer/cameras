@@ -596,6 +596,51 @@
             grid-template-columns: repeat(2, 1fr) !important;
         }
     }
+
+    /* === SPEED SELECTOR === */
+    .speed-selector {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        margin-right: 14px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    .speed-selector .speed-label {
+        color: var(--tab-fg);
+        margin-right: 6px;
+        white-space: nowrap;
+    }
+    .speed-selector input { display: none; }
+    .speed-selector label {
+        padding: 3px 10px;
+        color: var(--tab-fg);
+        background: var(--tab-bg);
+        cursor: pointer;
+        border: 1px solid var(--thumb-switch-bg);
+        border-right: none;
+        transition: background 0.15s, color 0.15s;
+        user-select: none;
+        white-space: nowrap;
+    }
+    .speed-selector label:first-of-type {
+        border-radius: 4px 0 0 4px;
+    }
+    .speed-selector label:last-of-type {
+        border-radius: 0 4px 4px 0;
+        border-right: 1px solid var(--thumb-switch-bg);
+    }
+    .speed-selector label:hover {
+        background: var(--tab-hover);
+    }
+    .speed-selector input:checked + label {
+        background: var(--accent);
+        color: var(--header-fg);
+        border-color: var(--accent);
+    }
+    .speed-selector input:checked + label + input + label {
+        border-left-color: var(--accent);
+    }
 </style>
 </head>
 <body>
@@ -637,6 +682,15 @@
                 <span class="switch"></span>
                 Dark
             </label>
+            <div class="speed-selector">
+                <span class="speed-label">Speed</span>
+                <input type="radio" name="presetSpeed" id="speedSlow" value="450" onchange="setPresetSpeed(this.value)">
+                <label for="speedSlow">Slow</label>
+                <input type="radio" name="presetSpeed" id="speedMed" value="550" onchange="setPresetSpeed(this.value)">
+                <label for="speedMed">Med</label>
+                <input type="radio" name="presetSpeed" id="speedFast" value="650" onchange="setPresetSpeed(this.value)">
+                <label for="speedFast">Fast</label>
+            </div>
         </div>
         <div class="content-area">
             <div class="tab-panel active presets" id="presetPanel">
@@ -775,6 +829,14 @@ function toggleDarkMode() {
     localStorage.setItem('darkMode', isDark ? '1' : '0');
 }
 
+// ------------------------------------------------------------
+// PRESET SPEED SELECTOR
+// ------------------------------------------------------------
+function setPresetSpeed(speed) {
+    localStorage.setItem('presetSpeed', speed);
+    fetch('/cam/ptz?cmd=%23UPVS' + speed + '&res=1').catch(() => {});
+}
+
 // Restore preferences
 if (localStorage.getItem('darkMode') === '1') {
     document.body.classList.add('dark');
@@ -784,6 +846,12 @@ if (localStorage.getItem('showThumbs') === '0') {
     document.body.classList.add('hide-thumbs');
     document.getElementById('thumbToggle').checked = false;
 }
+(function restorePresetSpeed() {
+    const saved = localStorage.getItem('presetSpeed') || '650';
+    const radio = document.querySelector('input[name="presetSpeed"][value="' + saved + '"]');
+    if (radio) radio.checked = true;
+    fetch('/cam/ptz?cmd=%23UPVS' + saved + '&res=1').catch(() => {});
+})();
 
 // ------------------------------------------------------------
 // TAB SWITCHING
