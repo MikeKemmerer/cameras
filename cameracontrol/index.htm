@@ -607,10 +607,6 @@
         font-weight: 600;
         min-width: 0;
     }
-    .speed-slider .speed-label {
-        color: var(--tab-fg);
-        white-space: nowrap;
-    }
     .speed-slider .speed-track {
         display: flex;
         flex-direction: column;
@@ -647,11 +643,9 @@
         border: 2px solid var(--header-fg);
         cursor: pointer;
     }
-    .speed-slider .speed-value {
+    .speed-slider .speed-end {
         color: var(--tab-fg);
         white-space: nowrap;
-        min-width: 3.5em;
-        text-align: center;
     }
 
     /* === SETTINGS DROPDOWN === */
@@ -723,11 +717,11 @@
             <button class="tab-btn" onclick="switchTab('sequences')">Sequences</button>
             <div class="spacer"></div>
             <div class="speed-slider">
-                <span class="speed-label">Speed</span>
+                <span class="speed-end">S</span>
                 <div class="speed-track">
                     <input type="range" id="speedRange" min="0" max="3" step="1" value="1" oninput="onSpeedSlider(this.value)">
                 </div>
-                <span class="speed-value" id="speedValueLabel">Med</span>
+                <span class="speed-end">F</span>
             </div>
             <div class="settings-wrap">
                 <button class="settings-btn" onclick="toggleSettings()" title="Settings">&#9881;</button>
@@ -906,7 +900,6 @@ var speedSteps = [
 ];
 function onSpeedSlider(idx) {
     var step = speedSteps[idx];
-    document.getElementById('speedValueLabel').textContent = step.label;
     localStorage.setItem('presetSpeed', step.value);
     fetch('/cam/ptz?cmd=%23UPVS' + step.value + '&res=1').catch(function(){});
 }
@@ -925,7 +918,6 @@ if (localStorage.getItem('showThumbs') === '0') {
     var idx = speedSteps.findIndex(function(s) { return s.value === saved; });
     if (idx < 0) idx = 1;
     document.getElementById('speedRange').value = idx;
-    document.getElementById('speedValueLabel').textContent = speedSteps[idx].label;
     fetch('/cam/ptz?cmd=%23UPVS' + saved + '&res=1').catch(function(){});
 })();
 
