@@ -402,6 +402,14 @@
         color: var(--pip-done-fg);
     }
 
+    .seq-countdown {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 8px;
+        min-height: 1.4em;
+    }
+
     .seq-next-btn {
         padding: 10px 20px;
         font-size: 14px;
@@ -841,6 +849,7 @@
                     <span class="seq-status-badge" id="seqStatusBadge"></span>
                 </div>
                 <div class="seq-steps-progress" id="seqStepsProgress"></div>
+                <div class="seq-countdown" id="seqCountdown"></div>
                 <div id="seqNextArea"></div>
             </div>
             <div class="seq-grid" id="seqGrid"></div>
@@ -1033,6 +1042,7 @@ function switchTab(tabName) {
 // ------------------------------------------------------------
 let sequences = [];
 let activeSequence = null;
+var countdownInterval = null;
 // activeSequence = { name, steps, mode, stepIndex, direction, timer }
 // mode: 'auto' | 'semi' | 'boomerang'
 // direction: 1 (forward) | -1 (backward) — used by boomerang
@@ -1129,10 +1139,16 @@ function startSequence(btn) {
     }
 }
 
+function upvsToSpeedNum(upvs) {
+    return (parseFloat(upvs) - 250) / 25;
+}
+
 function showSpeedModal(seq, mode, seqSpeed, currentSpeed) {
     var seqLabel = getSpeedLabel(seqSpeed);
     var curLabel = getSpeedLabel(currentSpeed);
-    var scale = parseFloat(seqSpeed) / parseFloat(currentSpeed);
+    var seqNum = upvsToSpeedNum(seqSpeed);
+    var curNum = upvsToSpeedNum(currentSpeed);
+    var scale = seqNum / curNum;
     var scalePercent = Math.round(scale * 100);
     var scaleDesc = scale < 1 ? (100 - scalePercent) + '% shorter' : (scalePercent - 100) + '% longer';
 
@@ -1212,6 +1228,24 @@ function executeStep() {
 
     // Auto or Boomerang — schedule next step after delay
     const delay = step.delay > 0 ? step.delay * 1000 : 500;
+
+    // Start countdown display
+    if (countdownInterval) clearInterval(countdownInterval);
+    var remaining = delay / 1000;
+    var cdEl = document.getElementById('seqCountdown');
+    cdEl.textContent = 'Next in ' + remaining.toFixed(1) + 's';
+    var cdStart = Date.now();
+    countdownInterval = setInterval(function() {
+        var elapsed = (Date.now() - cdStart) / 1000;
+        var left = Math.max(0, (delay / 1000) - elapsed);
+        cdEl.textContent = 'Next in ' + left.toFixed(1) + 's';
+        if (left <= 0) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            cdEl.textContent = '';
+        }
+    }, 100);
+
     activeSequence.timer = setTimeout(() => {
         if (!activeSequence) return;
         advanceStep();
@@ -1285,11 +1319,16 @@ function stopSequence() {
     if (activeSequence && activeSequence.timer) {
         clearTimeout(activeSequence.timer);
     }
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
     activeSequence = null;
 
     document.getElementById('globalStopBtn').classList.remove('visible');
     document.getElementById('seqStatus').classList.remove('active');
     document.getElementById('seqNextArea').innerHTML = '';
+    document.getElementById('seqCountdown').textContent = '';
     document.getElementById('seqLoopToggle').classList.remove('visible');
 }
 
