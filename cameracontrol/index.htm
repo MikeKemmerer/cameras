@@ -849,7 +849,7 @@ if (localStorage.getItem('showThumbs') === '0') {
     document.getElementById('thumbToggle').checked = false;
 }
 (function restorePresetSpeed() {
-    const saved = localStorage.getItem('presetSpeed') || '650';
+    const saved = localStorage.getItem('presetSpeed') || '550';
     const radio = document.querySelector('input[name="presetSpeed"][value="' + saved + '"]');
     if (radio) radio.checked = true;
     fetch('/cam/ptz?cmd=%23UPVS' + saved + '&res=1').catch(() => {});
