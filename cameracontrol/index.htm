@@ -709,6 +709,68 @@
         flex-direction: column;
         gap: 10px;
     }
+
+    /* === SPEED CHOICE MODAL === */
+    .speed-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+    }
+    .speed-modal-overlay.open {
+        display: flex;
+    }
+    .speed-modal {
+        background: var(--panel);
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        padding: 20px 24px;
+        max-width: 340px;
+        width: 90%;
+        text-align: center;
+    }
+    .speed-modal h3 {
+        margin: 0 0 6px;
+        font-size: 15px;
+        color: var(--fg);
+    }
+    .speed-modal p {
+        font-size: 13px;
+        color: var(--meta-fg);
+        margin: 0 0 16px;
+        line-height: 1.4;
+    }
+    .speed-modal-btns {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .speed-modal-btn {
+        padding: 10px 12px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .speed-modal-btn.primary {
+        background: var(--accent);
+        color: white;
+    }
+    .speed-modal-btn.primary:hover {
+        background: var(--accent-hover);
+    }
+    .speed-modal-btn.secondary {
+        background: var(--thumb-switch-bg);
+        color: var(--fg);
+    }
+    .speed-modal-btn.secondary:hover {
+        opacity: 0.85;
+    }
 </style>
 </head>
 <body>
@@ -1060,20 +1122,59 @@ function startSequence(btn) {
     const currentSpeed = localStorage.getItem('presetSpeed') || '550';
 
     if (currentSpeed !== seqSpeed) {
-        var seqLabel = getSpeedLabel(seqSpeed);
-        var curLabel = getSpeedLabel(currentSpeed);
-        if (confirm('This sequence defaults to ' + seqLabel + ' speed.\nYou have ' + curLabel + ' selected.\n\nKeep your current speed?')) {
-            // User wants to keep their speed — don't change it
-        } else {
-            applySpeed(seqSpeed);
-        }
+        showSpeedModal(seq, mode, seqSpeed, currentSpeed);
     } else {
         applySpeed(seqSpeed);
+        launchSequence(seq, mode, seq.steps);
     }
+}
 
+function showSpeedModal(seq, mode, seqSpeed, currentSpeed) {
+    var seqLabel = getSpeedLabel(seqSpeed);
+    var curLabel = getSpeedLabel(currentSpeed);
+    var scale = parseFloat(seqSpeed) / parseFloat(currentSpeed);
+    var scalePercent = Math.round(scale * 100);
+    var scaleDesc = scale < 1 ? (100 - scalePercent) + '% shorter' : (scalePercent - 100) + '% longer';
+
+    document.getElementById('speedModalTitle').textContent = 'Speed Mismatch';
+    document.getElementById('speedModalMsg').innerHTML =
+        'This sequence defaults to <strong>' + escapeHtml(seqLabel) + '</strong> speed.<br>' +
+        'You have <strong>' + escapeHtml(curLabel) + '</strong> selected.';
+
+    var btns = document.getElementById('speedModalBtns');
+    btns.innerHTML =
+        '<button class="speed-modal-btn primary" id="smUseDefault">Use ' + escapeHtml(seqLabel) + ' (sequence default)</button>' +
+        '<button class="speed-modal-btn secondary" id="smKeep">Keep ' + escapeHtml(curLabel) + '</button>' +
+        '<button class="speed-modal-btn secondary" id="smScale">Keep ' + escapeHtml(curLabel) + ' &amp; scale times (' + scaleDesc + ')</button>';
+
+    document.getElementById('speedModalOverlay').classList.add('open');
+
+    document.getElementById('smUseDefault').onclick = function() {
+        closeSpeedModal();
+        applySpeed(seqSpeed);
+        launchSequence(seq, mode, seq.steps);
+    };
+    document.getElementById('smKeep').onclick = function() {
+        closeSpeedModal();
+        launchSequence(seq, mode, seq.steps);
+    };
+    document.getElementById('smScale').onclick = function() {
+        closeSpeedModal();
+        var scaled = seq.steps.map(function(st) {
+            return { preset: st.preset, delay: Math.round(st.delay * scale * 10) / 10, label: st.label };
+        });
+        launchSequence(seq, mode, scaled);
+    };
+}
+
+function closeSpeedModal() {
+    document.getElementById('speedModalOverlay').classList.remove('open');
+}
+
+function launchSequence(seq, mode, steps) {
     activeSequence = {
         name: seq.name,
-        steps: seq.steps,
+        steps: steps,
         mode: mode,
         stepIndex: 0,
         direction: 1,
@@ -1228,6 +1329,14 @@ loadSequences();
 // Start in MJPEG mode
 switchToMJPEG();
 </script>
+
+<div class="speed-modal-overlay" id="speedModalOverlay" onclick="if(event.target===this)closeSpeedModal()">
+    <div class="speed-modal">
+        <h3 id="speedModalTitle"></h3>
+        <p id="speedModalMsg"></p>
+        <div class="speed-modal-btns" id="speedModalBtns"></div>
+    </div>
+</div>
 
 </body>
 </html>
