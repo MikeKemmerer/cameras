@@ -613,6 +613,19 @@
         align-items: stretch;
         min-width: 80px;
         width: 100px;
+        position: relative;
+    }
+    .speed-slider .speed-tick {
+        position: absolute;
+        left: 40%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 12px;
+        background: var(--tab-fg);
+        opacity: 0.45;
+        pointer-events: none;
+        border-radius: 1px;
     }
     .speed-slider input[type="range"] {
         -webkit-appearance: none;
@@ -719,7 +732,8 @@
             <div class="speed-slider">
                 <span class="speed-end">S</span>
                 <div class="speed-track">
-                    <input type="range" id="speedRange" min="0" max="3" step="1" value="1" oninput="onSpeedSlider(this.value)">
+                    <input type="range" id="speedRange" min="0" max="5" step="1" value="2" oninput="onSpeedSlider(this.value)">
+                    <div class="speed-tick"></div>
                 </div>
                 <span class="speed-end">F</span>
             </div>
@@ -893,10 +907,12 @@ function toggleDarkMode() {
 // PRESET SPEED SELECTOR
 // ------------------------------------------------------------
 var speedSteps = [
+    { value: '350', label: 'X-Slow' },
     { value: '450', label: 'Slow' },
     { value: '550', label: 'Med' },
     { value: '650', label: 'Fast' },
-    { value: '750', label: 'X-Fast' }
+    { value: '750', label: 'X-Fast' },
+    { value: '850', label: 'XX-Fast' }
 ];
 function onSpeedSlider(idx) {
     var step = speedSteps[idx];
@@ -916,7 +932,7 @@ if (localStorage.getItem('showThumbs') === '0') {
 (function restorePresetSpeed() {
     var saved = localStorage.getItem('presetSpeed') || '550';
     var idx = speedSteps.findIndex(function(s) { return s.value === saved; });
-    if (idx < 0) idx = 1;
+    if (idx < 0) idx = 2;
     document.getElementById('speedRange').value = idx;
     fetch('/cam/ptz?cmd=%23UPVS' + saved + '&res=1').catch(function(){});
 })();
