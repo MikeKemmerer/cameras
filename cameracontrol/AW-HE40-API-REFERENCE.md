@@ -4,6 +4,71 @@ This document is a comprehensive reference for controlling the Panasonic AW-HE40
 
 All commands in this document were gathered from Panasonic's official protocol specification and cross-referenced against the [Bitfocus Companion module for Panasonic PTZ cameras](https://github.com/bitfocus/companion-module-panasonic-ptz), which implements the full command set in JavaScript.
 
+---
+
+## HE40-Series Feature Matrix
+
+This table summarizes every feature in this document and whether it's available on the AW-HE40 specifically. Some features (like ND filter, color temperature, and green tally) exist on other Panasonic PTZ models but are not present on the HE40 hardware. If we ever upgrade to a newer model, this table shows what additional capabilities become available.
+
+| Feature | Supported | Endpoint | Notes |
+|---------|-----------|----------|-------|
+| Pan/Tilt (continuous) | ✅ | aw_ptz | `#PTS<PP><TT>` |
+| Pan/Tilt (absolute) | ✅ | aw_ptz | `#APC<PPPP><TTTT>` |
+| Zoom | ✅ | aw_ptz | `#Z<SS>` |
+| Focus (manual drive) | ✅ | aw_ptz | `#F<SS>` |
+| Auto Focus toggle | ✅ | aw_ptz | `#D11` / `#D10` |
+| One Touch Auto Focus | ✅ | aw_cam | `OSE:69:1` |
+| Iris (manual) | ✅ | aw_ptz | `#I<HH>` |
+| Auto Iris toggle | ✅ | aw_ptz | `#D30` / `#D31` |
+| Preset recall | ✅ | aw_ptz | `#R<NN>` (0-indexed) |
+| Preset save | ✅ | aw_ptz | `#M<NN>` (0-indexed) |
+| Preset recall speed | ✅ | aw_ptz | `#UPVS<NNN>` (275–999) |
+| Preset mode (A/B/C) | ✅ | aw_cam | `OSE:71:<M>` |
+| Gain | ✅ | aw_cam | `OGU:<HH>` |
+| Shutter | ✅ | aw_cam | `OSH:<H>` |
+| Pedestal | ✅ | aw_cam | `OTP:<HHH>` |
+| Power | ✅ | aw_ptz | `#O1` / `#O0` |
+| Tally (red) | ✅ | aw_ptz | `#DA1` / `#DA0` |
+| Install position | ✅ | aw_ptz | `#INS0` / `#INS1` |
+| SD card recording | ✅ | sdctrl | `sdctrl?save=start\|end` |
+| Color bars | ✅ | aw_cam | `DCB:1` / `DCB:0` |
+| ND filter | ❌ | — | Not on HE40 |
+| Preset time mode | ❌ | — | Not on HE40 (speed only) |
+| Green tally | ❌ | — | HE40 has red only |
+| Color temperature | ❌ | — | Not on HE40 |
+| Scene select | ❌ | — | Not on HE40 |
+| White balance mode | ❌ | — | Not on HE40 |
+
+---
+
+## Table of Contents
+
+- [HE40-Series Feature Matrix](#he40-series-feature-matrix)
+- [Endpoints](#endpoints)
+- [Pan/Tilt — Continuous Movement](#pantilt--continuous-movement)
+- [Zoom](#zoom)
+- [Focus](#focus)
+- [Iris](#iris)
+- [Presets](#presets)
+- [Gain](#gain)
+- [Shutter](#shutter)
+- [Pedestal (Black Level)](#pedestal-black-level)
+- [Color Bars](#color-bars)
+- [Power](#power)
+- [Tally Light](#tally-light)
+- [Installation Position](#installation-position)
+- [SD Card Recording](#sd-card-recording)
+- [Implementation Notes](#implementation-notes)
+- [Status Queries and Camera State](#status-queries-and-camera-state)
+- [Network Discovery and Identification](#network-discovery-and-identification)
+- [Tally Integration with Video Switcher](#tally-integration-with-video-switcher)
+- [Camera Web UI Proxy](#camera-web-ui-proxy)
+- [Image Adjustment Commands](#image-adjustment-commands)
+- [Streaming Configuration](#streaming-configuration)
+- [Sources](#sources)
+
+---
+
 ## Endpoints
 
 The camera exposes four main CGI endpoints. None of them require authentication for basic operation — they are accessible to any device on the same network.
@@ -427,41 +492,6 @@ GET /cgi-bin/sdctrl?save=end      → Stop recording
 ```
 
 > Note: An SD card must be inserted and formatted by the camera before these commands will work.
-
----
-
-## HE40-Series Feature Matrix
-
-This table summarizes every feature in this document and whether it's available on the AW-HE40 specifically. Some features (like ND filter, color temperature, and green tally) exist on other Panasonic PTZ models but are not present on the HE40 hardware. If we ever upgrade to a newer model, this table shows what additional capabilities become available.
-
-| Feature | Supported | Endpoint | Notes |
-|---------|-----------|----------|-------|
-| Pan/Tilt (continuous) | ✅ | aw_ptz | `#PTS<PP><TT>` |
-| Pan/Tilt (absolute) | ✅ | aw_ptz | `#APC<PPPP><TTTT>` |
-| Zoom | ✅ | aw_ptz | `#Z<SS>` |
-| Focus (manual drive) | ✅ | aw_ptz | `#F<SS>` |
-| Auto Focus toggle | ✅ | aw_ptz | `#D11` / `#D10` |
-| One Touch Auto Focus | ✅ | aw_cam | `OSE:69:1` |
-| Iris (manual) | ✅ | aw_ptz | `#I<HH>` |
-| Auto Iris toggle | ✅ | aw_ptz | `#D30` / `#D31` |
-| Preset recall | ✅ | aw_ptz | `#R<NN>` (0-indexed) |
-| Preset save | ✅ | aw_ptz | `#M<NN>` (0-indexed) |
-| Preset recall speed | ✅ | aw_ptz | `#UPVS<NNN>` (275–999) |
-| Preset mode (A/B/C) | ✅ | aw_cam | `OSE:71:<M>` |
-| Gain | ✅ | aw_cam | `OGU:<HH>` |
-| Shutter | ✅ | aw_cam | `OSH:<H>` |
-| Pedestal | ✅ | aw_cam | `OTP:<HHH>` |
-| Power | ✅ | aw_ptz | `#O1` / `#O0` |
-| Tally (red) | ✅ | aw_ptz | `#DA1` / `#DA0` |
-| Install position | ✅ | aw_ptz | `#INS0` / `#INS1` |
-| SD card recording | ✅ | sdctrl | `sdctrl?save=start\|end` |
-| Color bars | ✅ | aw_cam | `DCB:1` / `DCB:0` |
-| ND filter | ❌ | — | Not on HE40 |
-| Preset time mode | ❌ | — | Not on HE40 (speed only) |
-| Green tally | ❌ | — | HE40 has red only |
-| Color temperature | ❌ | — | Not on HE40 |
-| Scene select | ❌ | — | Not on HE40 |
-| White balance mode | ❌ | — | Not on HE40 |
 
 ---
 

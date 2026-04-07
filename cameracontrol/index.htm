@@ -718,6 +718,140 @@
         gap: 10px;
     }
 
+    /* Night mode selector */
+    .settings-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .settings-group-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--meta-fg);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .settings-seg {
+        display: flex;
+        gap: 0;
+        border-radius: 5px;
+        overflow: hidden;
+        border: 1px solid var(--thumb-switch-bg);
+    }
+    .settings-seg button {
+        flex: 1;
+        padding: 5px 8px;
+        font-size: 11px;
+        font-weight: 600;
+        border: none;
+        border-radius: 0;
+        background: var(--tab-bg);
+        color: var(--tab-fg);
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+    }
+    .settings-seg button.active {
+        background: var(--accent);
+        color: white;
+    }
+    body.dark .settings-seg button {
+        background: #222;
+        color: #888;
+        border-right: 1px solid #000;
+    }
+    body.dark .settings-seg button.active {
+        background: var(--accent);
+        color: #000;
+    }
+    .settings-action-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+        transition: background 0.15s;
+        text-align: center;
+    }
+    .settings-action-btn:hover {
+        background: var(--accent-hover);
+    }
+    .settings-divider {
+        height: 1px;
+        background: var(--thumb-switch-bg);
+        margin: 2px 0;
+    }
+
+    /* Camera info modal */
+    .cam-info-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+    }
+    .cam-info-overlay.open {
+        display: flex;
+    }
+    .cam-info-modal {
+        background: var(--panel);
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        padding: 20px 24px;
+        max-width: 400px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    .cam-info-modal h3 {
+        margin: 0 0 12px;
+        font-size: 16px;
+        color: var(--fg);
+    }
+    .cam-info-modal table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+    .cam-info-modal td {
+        padding: 4px 8px;
+        border-bottom: 1px solid var(--thumb-switch-bg);
+    }
+    .cam-info-modal td:first-child {
+        font-weight: 600;
+        color: var(--meta-fg);
+        white-space: nowrap;
+        width: 40%;
+    }
+    .cam-info-modal td:last-child {
+        color: var(--fg);
+        word-break: break-all;
+    }
+    .cam-info-close {
+        margin-top: 14px;
+        width: 100%;
+        padding: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+    }
+    .cam-info-close:hover {
+        background: var(--accent-hover);
+    }
+    .cam-info-loading {
+        text-align: center;
+        padding: 20px;
+        color: var(--meta-fg);
+    }
+
     /* === SPEED CHOICE MODAL === */
     .speed-modal-overlay {
         display: none;
@@ -831,6 +965,20 @@
                         <span class="switch"></span>
                         Dark
                     </label>
+                    <div class="settings-divider"></div>
+                    <div class="settings-group">
+                        <span class="settings-group-label">Night Mode</span>
+                        <div class="settings-seg" id="nightModeSeg">
+                            <button class="active" onclick="setNightMode('off')">Off</button>
+                            <button onclick="setNightMode('on')">On</button>
+                            <button onclick="setNightMode('auto')">Auto</button>
+                        </div>
+                    </div>
+                    <div class="settings-divider"></div>
+                    <button class="settings-action-btn" onclick="autoAdjustImage()">&#9881; Auto Adjust Image</button>
+                    <button class="settings-action-btn" onclick="showCamInfo()">&#128712; Camera Info</button>
+                    <div class="settings-divider"></div>
+                    <a href="ptz-control.htm" class="settings-action-btn" style="text-decoration:none; display:block;">&#127911; PTZ Control &amp; Presets</a>
                 </div>
             </div>
         </div>
@@ -1367,6 +1515,128 @@ loadSequences();
 
 // Start in MJPEG mode
 switchToMJPEG();
+
+// ------------------------------------------------------------
+// NIGHT MODE
+// ------------------------------------------------------------
+// Night mode command — HE40 may not support IR night mode via CGI.
+// These use the common Panasonic OSD command pattern; test on actual hardware.
+// If the camera returns rER03, the command isn't supported on this model.
+function setNightMode(mode) {
+    var cmds = { off: 'OSA:87:0', on: 'OSA:87:1', auto: 'OSA:87:2' };
+    var cmd = cmds[mode];
+    if (!cmd) return;
+    fetch('/cam/cam?cmd=' + encodeURIComponent(cmd) + '&res=1').catch(function(){});
+    // Update button state
+    var btns = document.querySelectorAll('#nightModeSeg button');
+    btns.forEach(function(b) { b.classList.remove('active'); });
+    var labels = { off: 0, on: 1, auto: 2 };
+    btns[labels[mode]].classList.add('active');
+    localStorage.setItem('nightMode', mode);
+}
+(function restoreNightMode() {
+    var saved = localStorage.getItem('nightMode');
+    if (saved && saved !== 'off') setNightMode(saved);
+})();
+
+// ------------------------------------------------------------
+// AUTO ADJUST IMAGE (one-shot)
+// ------------------------------------------------------------
+function autoAdjustImage() {
+    // Trigger one-touch auto focus
+    fetch('/cam/cam?cmd=OSE:69:1&res=1').catch(function(){});
+    // Enable auto iris temporarily
+    fetch('/cam/ptz?cmd=%23D30&res=1').catch(function(){});
+    // Flash feedback on the button
+    var btn = event.target;
+    var orig = btn.textContent;
+    btn.textContent = '\u2713 Adjusting...';
+    btn.disabled = true;
+    setTimeout(function() {
+        btn.textContent = orig;
+        btn.disabled = false;
+    }, 2000);
+}
+
+// ------------------------------------------------------------
+// CAMERA INFO POPUP
+// ------------------------------------------------------------
+function showCamInfo() {
+    var overlay = document.getElementById('camInfoOverlay');
+    var body = document.getElementById('camInfoBody');
+    body.innerHTML = '<div class="cam-info-loading">Loading\u2026</div>';
+    overlay.classList.add('open');
+
+    fetch('/cam/status')
+        .then(function(r) { return r.text(); })
+        .then(function(text) {
+            var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); });
+            var info = parseCamData(lines);
+            var html = '<table>';
+            info.forEach(function(row) {
+                html += '<tr><td>' + escapeHtml(row[0]) + '</td><td>' + escapeHtml(row[1]) + '</td></tr>';
+            });
+            html += '</table>';
+            body.innerHTML = html;
+        })
+        .catch(function() {
+            body.innerHTML = '<div class="cam-info-loading" style="color:var(--stop-bg);">' +
+                'Failed to fetch camera info.<br><small>Ensure /cam/status proxy is configured in Apache.</small></div>';
+        });
+}
+
+function parseCamData(lines) {
+    var info = [];
+    var labelMap = {
+        'OID': 'Model',
+        'TITLE': 'Name',
+        'p1': ['Power', 'ON'],
+        'p0': ['Power', 'OFF'],
+        'iNS0': ['Mount', 'Desktop'],
+        'iNS1': ['Mount', 'Hanging'],
+        'dA0': ['Tally', 'OFF'],
+        'dA1': ['Tally', 'ON'],
+        'd30': ['Iris Mode', 'Auto'],
+        'd31': ['Iris Mode', 'Manual'],
+    };
+
+    lines.forEach(function(line) {
+        line = line.trim();
+        if (!line) return;
+
+        // Check exact-match labels first
+        if (labelMap[line]) {
+            var pair = labelMap[line];
+            info.push(pair);
+            return;
+        }
+
+        // Colon-separated key:value
+        var parts = line.split(':');
+        var key = parts[0];
+        var val = parts.slice(1).join(':');
+
+        if (key === 'OID') { info.push(['Model', val]); return; }
+        if (key === 'TITLE') { info.push(['Camera Name', val]); return; }
+        if (key === 'OAF') { info.push(['Auto Focus', val === '1' ? 'ON' : 'OFF']); return; }
+        if (key === 'OGU') { info.push(['Gain', val === '80' ? 'Auto' : val]); return; }
+        if (key === 'OSH') { info.push(['Shutter', val === '0' ? 'OFF' : val]); return; }
+        if (key === 'DCB') { info.push(['Color Bars', val === '1' ? 'ON' : 'OFF']); return; }
+        if (key === 'OSE' && parts[1] === '71') { var modes = {'0':'A','1':'B','2':'C'}; info.push(['Preset Mode', modes[parts[2]] || parts[2]]); return; }
+        if (key.match(/^qSV/)) { info.push(['Firmware', val]); return; }
+
+        // Fallback: show as raw if it looks meaningful
+        if (val && key.length <= 6) {
+            info.push([key, val]);
+        }
+    });
+
+    return info;
+}
+
+function closeCamInfo() {
+    document.getElementById('camInfoOverlay').classList.remove('open');
+}
 </script>
 
 <div class="speed-modal-overlay" id="speedModalOverlay" onclick="if(event.target===this)closeSpeedModal()">
@@ -1374,6 +1644,14 @@ switchToMJPEG();
         <h3 id="speedModalTitle"></h3>
         <p id="speedModalMsg"></p>
         <div class="speed-modal-btns" id="speedModalBtns"></div>
+    </div>
+</div>
+
+<div class="cam-info-overlay" id="camInfoOverlay" onclick="if(event.target===this)closeCamInfo()">
+    <div class="cam-info-modal">
+        <h3>Camera Info</h3>
+        <div id="camInfoBody"><div class="cam-info-loading">Loading&hellip;</div></div>
+        <button class="cam-info-close" onclick="closeCamInfo()">Close</button>
     </div>
 </div>
 

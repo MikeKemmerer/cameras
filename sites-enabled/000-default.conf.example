@@ -19,6 +19,10 @@
         ProxyPass        /cam/cam  http://CAMERA_1_IP/cgi-bin/aw_cam
         ProxyPassReverse /cam/cam  http://CAMERA_1_IP/cgi-bin/aw_cam
 
+        # Camera status page (firmware, power, tally, focus mode, etc.)
+        ProxyPass        /cam/status  http://CAMERA_1_IP/live/camdata.html
+        ProxyPassReverse /cam/status  http://CAMERA_1_IP/live/camdata.html
+
 
 # ============================================
 # STATIC FILES (index.htm, controller.html, config, thumbnails)

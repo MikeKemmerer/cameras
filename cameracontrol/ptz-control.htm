@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PTZ Control &amp; Preset Setup</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    :root {
+        --bg: #f5f5f5;
+        --fg: #222;
+        --panel: white;
+        --accent: #0078d4;
+        --accent-hover: #005fa3;
+        --header-bg: #0078d4;
+        --header-fg: white;
+        --card-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        --meta-fg: #777;
+        --thumb-switch-bg: #aaa;
+        --stop-bg: #d64045;
+        --stop-hover: #b33438;
+        --success-bg: #28a745;
+        --slider-track: #ccc;
+    }
+    body.dark {
+        --bg: #111;
+        --fg: #eee;
+        --panel: #1b1b1b;
+        --accent: #3fa9f5;
+        --accent-hover: #5ab8f7;
+        --header-bg: #1b1b1b;
+        --header-fg: #eee;
+        --card-shadow: 0 2px 4px rgba(0,0,0,0.6);
+        --meta-fg: #888;
+        --thumb-switch-bg: #444;
+        --stop-bg: #5a1a1d;
+        --stop-hover: #7a2428;
+        --success-bg: #1a5a2a;
+        --slider-track: #333;
+    }
+    * { box-sizing: border-box; }
+    body {
+        margin: 0;
+        font-family: sans-serif;
+        background: var(--bg);
+        color: var(--fg);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+    header {
+        background: var(--header-bg);
+        color: var(--header-fg);
+        padding: 10px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    body.dark header { border-bottom: 2px solid var(--accent); }
+    header h2 { margin: 0; font-size: 16px; }
+    header a {
+        color: var(--header-fg);
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 600;
+        opacity: 0.85;
+    }
+    header a:hover { opacity: 1; }
+
+    .main-layout {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* Left: live preview */
+    .preview-col {
+        flex: 0 0 45%;
+        display: flex;
+        flex-direction: column;
+        background: black;
+    }
+    .preview-col img {
+        width: 100%;
+        flex: 1;
+        object-fit: contain;
+        min-height: 0;
+    }
+    .preview-col canvas {
+        display: none;
+    }
+
+    /* Right: controls */
+    .controls-col {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .ctrl-section {
+        background: var(--panel);
+        border-radius: 8px;
+        box-shadow: var(--card-shadow);
+        padding: 14px;
+    }
+    .ctrl-section h3 {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: var(--accent);
+    }
+
+    /* Joystick */
+    .joystick-wrap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .joystick {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        background: var(--slider-track);
+        position: relative;
+        touch-action: none;
+        cursor: crosshair;
+    }
+    body.dark .joystick { background: #222; border: 2px solid #333; }
+    .joystick-crosshair {
+        position: absolute;
+        background: var(--thumb-switch-bg);
+    }
+    .joystick-crosshair.h {
+        width: 100%;
+        height: 1px;
+        top: 50%;
+    }
+    .joystick-crosshair.v {
+        height: 100%;
+        width: 1px;
+        left: 50%;
+    }
+    .joystick-knob {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: var(--accent);
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        transition: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* Sliders */
+    .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+    .slider-row label {
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 50px;
+        color: var(--meta-fg);
+    }
+    .slider-row input[type="range"] {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 6px;
+        border-radius: 3px;
+        background: var(--slider-track);
+        outline: none;
+        cursor: pointer;
+    }
+    .slider-row input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--header-fg);
+        cursor: pointer;
+    }
+    .slider-row input[type="range"]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--header-fg);
+        cursor: pointer;
+    }
+    .focus-btns {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+    }
+    .focus-btns button {
+        flex: 1;
+        padding: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        background: var(--accent);
+        color: white;
+    }
+    .focus-btns button:hover { background: var(--accent-hover); }
+    .focus-btns button.active-toggle {
+        background: var(--success-bg);
+    }
+
+    /* Preset save */
+    .save-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .save-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    .save-row label {
+        font-size: 12px;
+        font-weight: 600;
+        min-width: 60px;
+        color: var(--meta-fg);
+    }
+    .save-row input, .save-row select {
+        flex: 1;
+        padding: 6px 10px;
+        font-size: 13px;
+        border: 1px solid var(--thumb-switch-bg);
+        border-radius: 5px;
+        background: var(--bg);
+        color: var(--fg);
+    }
+    .save-preview {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    .save-thumb {
+        width: 160px;
+        height: 90px;
+        border-radius: 6px;
+        background: var(--slider-track);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .save-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .save-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: 1;
+    }
+    .btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        color: white;
+        transition: background 0.15s;
+    }
+    .btn-primary { background: var(--accent); }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-success { background: var(--success-bg); }
+    .btn-success:hover { opacity: 0.9; }
+    .btn-danger { background: var(--stop-bg); }
+    .btn-danger:hover { background: var(--stop-hover); }
+
+    body.dark .ctrl-section { border: 1px solid #000; }
+    body.dark .save-row input, body.dark .save-row select {
+        background: #222;
+        border-color: #000;
+        color: #eee;
+    }
+    body.dark .btn {
+        border: 1px solid #000;
+    }
+
+    .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--success-bg);
+        color: white;
+        padding: 10px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 300;
+        opacity: 0;
+        transition: opacity 0.3s;
+        pointer-events: none;
+    }
+    .toast.visible { opacity: 1; }
+    .toast.error { background: var(--stop-bg); }
+
+    /* Mobile portrait */
+    @media (max-width: 700px) {
+        .main-layout { flex-direction: column; }
+        .preview-col { flex: 0 0 auto; height: 35vh; }
+    }
+    /* Mobile landscape */
+    @media (max-width: 1024px) and (orientation: landscape) {
+        .preview-col { flex: 0 0 40%; }
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <h2>PTZ Control &amp; Preset Setup</h2>
+    <a href="index.htm">&larr; Back to Presets</a>
+</header>
+
+<div class="main-layout">
+    <div class="preview-col">
+        <img id="liveFeed" src="/mjpeg" crossorigin="anonymous">
+        <canvas id="captureCanvas"></canvas>
+    </div>
+
+    <div class="controls-col">
+        <!-- Pan/Tilt Joystick -->
+        <div class="ctrl-section">
+            <h3>Pan / Tilt</h3>
+            <div class="joystick-wrap">
+                <div class="joystick" id="joystick">
+                    <div class="joystick-crosshair h"></div>
+                    <div class="joystick-crosshair v"></div>
+                    <div class="joystick-knob" id="joystickKnob"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zoom -->
+        <div class="ctrl-section">
+            <h3>Zoom</h3>
+            <div class="slider-row">
+                <label>Wide</label>
+                <input type="range" id="zoomSlider" min="-49" max="49" value="0"
+                       oninput="onZoomDrag(this.value)" onchange="onZoomRelease()">
+                <label style="text-align:right;">Tele</label>
+            </div>
+        </div>
+
+        <!-- Focus -->
+        <div class="ctrl-section">
+            <h3>Focus</h3>
+            <div class="slider-row">
+                <label>Near</label>
+                <input type="range" id="focusSlider" min="-49" max="49" value="0"
+                       oninput="onFocusDrag(this.value)" onchange="onFocusRelease()">
+                <label style="text-align:right;">Far</label>
+            </div>
+            <div class="focus-btns">
+                <button id="afBtn" onclick="toggleAutoFocus()">Auto Focus: ?</button>
+                <button onclick="triggerOTAF()">One-Touch AF</button>
+            </div>
+        </div>
+
+        <!-- Save Preset -->
+        <div class="ctrl-section">
+            <h3>Save New Preset</h3>
+            <div class="save-section">
+                <div class="save-row">
+                    <label>Number</label>
+                    <input type="number" id="presetNum" min="1" max="100" value="1" placeholder="1-100">
+                </div>
+                <div class="save-row">
+                    <label>Name</label>
+                    <input type="text" id="presetName" placeholder="e.g. Choir Loft" maxlength="60">
+                </div>
+                <div class="save-preview">
+                    <div class="save-thumb" id="thumbPreview">
+                        <img id="thumbImg" style="display:none;">
+                    </div>
+                    <div class="save-actions">
+                        <button class="btn btn-primary" onclick="captureThumb()">&#128247; Capture Thumbnail</button>
+                        <button class="btn btn-success" onclick="savePreset()">&#128190; Save Preset</button>
+                    </div>
+                </div>
+                <div style="font-size:11px; color:var(--meta-fg);">
+                    Saves camera position, captures thumbnail from MJPEG, and updates presets.json.
+                    Requires save-preset.php on the server.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// Restore dark mode preference
+if (localStorage.getItem('darkMode') === '1') document.body.classList.add('dark');
+
+// ============================================================
+// PAN/TILT JOYSTICK
+// ============================================================
+(function() {
+    var joy = document.getElementById('joystick');
+    var knob = document.getElementById('joystickKnob');
+    var active = false;
+    var sendInterval = null;
+    var lastPan = 50, lastTilt = 50;
+
+    function getRelative(e) {
+        var rect = joy.getBoundingClientRect();
+        var cx = rect.left + rect.width / 2;
+        var cy = rect.top + rect.height / 2;
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        var dx = (clientX - cx) / (rect.width / 2);
+        var dy = (clientY - cy) / (rect.height / 2);
+        dx = Math.max(-1, Math.min(1, dx));
+        dy = Math.max(-1, Math.min(1, dy));
+        return { x: dx, y: dy };
+    }
+
+    function updateKnob(dx, dy) {
+        var r = joy.offsetWidth / 2;
+        knob.style.left = (r + dx * r) + 'px';
+        knob.style.top = (r + dy * r) + 'px';
+    }
+
+    function mapPanTilt(dx, dy) {
+        // x: -1 (left) => 01, 0 => 50, +1 (right) => 99
+        // y: -1 (up) => 99, 0 => 50, +1 (down) => 01
+        var pan = Math.round(50 + dx * 49);
+        var tilt = Math.round(50 - dy * 49);
+        pan = Math.max(1, Math.min(99, pan));
+        tilt = Math.max(1, Math.min(99, tilt));
+        return { pan: pan, tilt: tilt };
+    }
+
+    function sendPTS(pan, tilt) {
+        if (pan === lastPan && tilt === lastTilt) return;
+        lastPan = pan;
+        lastTilt = tilt;
+        var p = pan < 10 ? '0' + pan : '' + pan;
+        var t = tilt < 10 ? '0' + tilt : '' + tilt;
+        fetch('/cam/ptz?cmd=%23PTS' + p + t + '&res=1').catch(function(){});
+    }
+
+    function onMove(e) {
+        if (!active) return;
+        e.preventDefault();
+        var rel = getRelative(e);
+        updateKnob(rel.x, rel.y);
+        var pt = mapPanTilt(rel.x, rel.y);
+        sendPTS(pt.pan, pt.tilt);
+    }
+
+    function onStart(e) {
+        active = true;
+        onMove(e);
+    }
+
+    function onEnd() {
+        active = false;
+        updateKnob(0, 0);
+        // Stop movement
+        sendPTS(50, 50);
+        lastPan = 50;
+        lastTilt = 50;
+    }
+
+    joy.addEventListener('mousedown', onStart);
+    joy.addEventListener('touchstart', onStart, { passive: false });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onEnd);
+    document.addEventListener('touchend', onEnd);
+})();
+
+// ============================================================
+// ZOOM
+// ============================================================
+function onZoomDrag(val) {
+    val = parseInt(val);
+    var cmd = 50 + val;
+    cmd = Math.max(1, Math.min(99, cmd));
+    var s = cmd < 10 ? '0' + cmd : '' + cmd;
+    fetch('/cam/ptz?cmd=%23Z' + s + '&res=1').catch(function(){});
+}
+function onZoomRelease() {
+    document.getElementById('zoomSlider').value = 0;
+    fetch('/cam/ptz?cmd=%23Z50&res=1').catch(function(){});
+}
+
+// ============================================================
+// FOCUS
+// ============================================================
+var autoFocusState = null;
+
+function onFocusDrag(val) {
+    val = parseInt(val);
+    var cmd = 50 + val;
+    cmd = Math.max(1, Math.min(99, cmd));
+    var s = cmd < 10 ? '0' + cmd : '' + cmd;
+    fetch('/cam/ptz?cmd=%23F' + s + '&res=1').catch(function(){});
+}
+function onFocusRelease() {
+    document.getElementById('focusSlider').value = 0;
+    fetch('/cam/ptz?cmd=%23F50&res=1').catch(function(){});
+}
+
+function toggleAutoFocus() {
+    var newState = autoFocusState === true ? false : true;
+    var cmd = newState ? 'D11' : 'D10';
+    fetch('/cam/ptz?cmd=%23' + cmd + '&res=1')
+        .then(function() {
+            autoFocusState = newState;
+            updateAFButton();
+        })
+        .catch(function(){});
+}
+
+function updateAFButton() {
+    var btn = document.getElementById('afBtn');
+    if (autoFocusState === true) {
+        btn.textContent = 'Auto Focus: ON';
+        btn.classList.add('active-toggle');
+    } else if (autoFocusState === false) {
+        btn.textContent = 'Auto Focus: OFF';
+        btn.classList.remove('active-toggle');
+    } else {
+        btn.textContent = 'Auto Focus: ?';
+        btn.classList.remove('active-toggle');
+    }
+}
+
+function triggerOTAF() {
+    fetch('/cam/cam?cmd=OSE:69:1&res=1').catch(function(){});
+    showToast('One-Touch Auto Focus triggered');
+}
+
+// Try to read initial AF state from camera
+fetch('/cam/status')
+    .then(function(r) { return r.text(); })
+    .then(function(text) {
+        if (text.indexOf('OAF:1') !== -1) { autoFocusState = true; updateAFButton(); }
+        else if (text.indexOf('OAF:0') !== -1) { autoFocusState = false; updateAFButton(); }
+    })
+    .catch(function(){});
+
+// ============================================================
+// THUMBNAIL CAPTURE
+// ============================================================
+var capturedBlob = null;
+
+function captureThumb() {
+    var img = document.getElementById('liveFeed');
+    var canvas = document.getElementById('captureCanvas');
+    var ctx = canvas.getContext('2d');
+
+    // Set canvas to video dimensions
+    canvas.width = img.naturalWidth || 640;
+    canvas.height = img.naturalHeight || 360;
+
+    try {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(function(blob) {
+            if (!blob) {
+                showToast('Capture failed — CORS may be blocking canvas export', true);
+                return;
+            }
+            capturedBlob = blob;
+            var url = URL.createObjectURL(blob);
+            var thumbImg = document.getElementById('thumbImg');
+            thumbImg.src = url;
+            thumbImg.style.display = 'block';
+            showToast('Thumbnail captured');
+        }, 'image/jpeg', 0.85);
+    } catch(e) {
+        showToast('Capture failed — CORS may be blocking canvas export', true);
+    }
+}
+
+// ============================================================
+// SAVE PRESET
+// ============================================================
+function savePreset() {
+    var num = parseInt(document.getElementById('presetNum').value);
+    var name = document.getElementById('presetName').value.trim();
+
+    if (!num || num < 1 || num > 100) {
+        showToast('Preset number must be 1-100', true);
+        return;
+    }
+    if (!name) {
+        showToast('Please enter a preset name', true);
+        return;
+    }
+
+    // Send save-position command to camera (0-indexed)
+    var cmdIdx = (num - 1).toString().padStart(2, '0');
+    fetch('/cam/ptz?cmd=%23M' + cmdIdx + '&res=1').catch(function(){});
+
+    // Build form data for server save
+    var fd = new FormData();
+    fd.append('number', num);
+    fd.append('label', name);
+    if (capturedBlob) {
+        fd.append('thumbnail', capturedBlob, 'preset' + num + '.jpg');
+    }
+
+    fetch('save-preset.php', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                showToast('Preset ' + num + ' saved: ' + name);
+                capturedBlob = null;
+            } else {
+                showToast('Server error: ' + (data.error || 'unknown'), true);
+            }
+        })
+        .catch(function() {
+            // Server might not have PHP; save camera position anyway
+            showToast('Camera position saved. Server update failed (save-preset.php may not be available).', true);
+        });
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function showToast(msg, isError) {
+    var toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.className = 'toast visible' + (isError ? ' error' : '');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(function() {
+        toast.className = 'toast';
+    }, 3000);
+}
+</script>
+</body>
+</html>

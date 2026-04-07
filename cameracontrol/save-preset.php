@@ -1,0 +1,117 @@
+<?php
+/**
+ * save-preset.php — Saves a camera preset thumbnail and updates presets.json.
+ *
+ * Expects a POST with:
+ *   - number    (int, 1-100)
+ *   - label     (string, preset name)
+ *   - thumbnail (file upload, JPEG image — optional)
+ *
+ * On success: saves thumbnail to images/preset{N}.jpg and
+ * adds/updates the entry in presets.json.
+ */
+
+header('Content-Type: application/json');
+
+// Only POST allowed
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    echo json_encode(['ok' => false, 'error' => 'POST required']);
+    exit;
+}
+
+$number = isset($_POST['number']) ? intval($_POST['number']) : 0;
+$label  = isset($_POST['label'])  ? trim($_POST['label'])    : '';
+
+// Validate
+if ($number < 1 || $number > 100) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Preset number must be 1-100']);
+    exit;
+}
+if ($label === '') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Preset label is required']);
+    exit;
+}
+
+$imagesDir  = __DIR__ . '/images';
+$presetsFile = __DIR__ . '/presets.json';
+$imagePath  = 'images/preset' . $number . '.jpg';
+$absImage   = $imagesDir . '/preset' . $number . '.jpg';
+
+// Save uploaded thumbnail if present
+if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK) {
+    $tmpPath = $_FILES['thumbnail']['tmp_name'];
+
+    // Verify it's actually a JPEG image
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mime  = finfo_file($finfo, $tmpPath);
+    finfo_close($finfo);
+
+    if (!in_array($mime, ['image/jpeg', 'image/jpg'], true)) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Thumbnail must be a JPEG image']);
+        exit;
+    }
+
+    if (!is_dir($imagesDir)) {
+        mkdir($imagesDir, 0755, true);
+    }
+
+    if (!move_uploaded_file($tmpPath, $absImage)) {
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'Failed to save thumbnail']);
+        exit;
+    }
+} else {
+    // No thumbnail uploaded — use existing or fallback
+    if (!file_exists($absImage)) {
+        $imagePath = 'images/none.jpg';
+    }
+}
+
+// Load presets.json
+$presets = [];
+if (file_exists($presetsFile)) {
+    $raw = file_get_contents($presetsFile);
+    $presets = json_decode($raw, true);
+    if (!is_array($presets)) {
+        $presets = [];
+    }
+}
+
+// Find existing preset or create new entry
+$found = false;
+foreach ($presets as &$p) {
+    if (isset($p['number']) && intval($p['number']) === $number) {
+        $p['label'] = $label;
+        $p['image'] = $imagePath;
+        $found = true;
+        break;
+    }
+}
+unset($p);
+
+if (!$found) {
+    $presets[] = [
+        'number' => $number,
+        'label'  => $label,
+        'image'  => $imagePath,
+    ];
+}
+
+// Sort by preset number
+usort($presets, function($a, $b) {
+    return intval($a['number']) - intval($b['number']);
+});
+
+// Write back
+$json = json_encode($presets, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+if (file_put_contents($presetsFile, $json) === false) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Failed to write presets.json']);
+    exit;
+}
+
+echo json_encode(['ok' => true, 'preset' => $number, 'label' => $label, 'image' => $imagePath]);
