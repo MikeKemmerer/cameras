@@ -967,11 +967,11 @@
                     </label>
                     <div class="settings-divider"></div>
                     <div class="settings-group">
-                        <span class="settings-group-label">Gain Boost</span>
-                        <div class="settings-seg" id="gainBoostSeg">
-                            <button class="active" onclick="setGainBoost('auto')">Auto</button>
-                            <button onclick="setGainBoost('low')">Low</button>
-                            <button onclick="setGainBoost('high')">High</button>
+                        <span class="settings-group-label">Day / Night</span>
+                        <div class="settings-seg" id="dayNightSeg">
+                            <button class="active" onclick="setDayNight('day')">Day</button>
+                            <button onclick="setDayNight('night')">Night</button>
+                            <button onclick="setDayNight('auto')">Auto</button>
                         </div>
                     </div>
                     <div class="settings-divider"></div>
@@ -1517,26 +1517,26 @@ loadSequences();
 switchToMJPEG();
 
 // ------------------------------------------------------------
-// GAIN BOOST
+// DAY / NIGHT MODE
 // ------------------------------------------------------------
-// The HE40 does not have IR night mode. Instead, gain boost increases
-// sensor amplification for low-light situations via OGU: command.
-// Auto = camera manages gain, Low = 12 dB, High = 24 dB.
-function setGainBoost(mode) {
-    var cmds = { auto: '80', low: '14', high: '20' };
+// ODT command via aw_cam — confirmed from HE40 camdata dumps.
+// All three HE40 cameras report ODT:1 (night mode).
+// Same command used by the camera's admin/setup_camera_detail.html page.
+function setDayNight(mode) {
+    var cmds = { day: '0', night: '1', auto: '2' };
     var val = cmds[mode];
-    if (!val) return;
-    fetch('/cam/cam?cmd=OGU:' + val + '&res=1').catch(function(){});
+    if (val === undefined) return;
+    fetch('/cam/cam?cmd=ODT:' + val + '&res=1').catch(function(){});
     // Update button state
-    var btns = document.querySelectorAll('#gainBoostSeg button');
+    var btns = document.querySelectorAll('#dayNightSeg button');
     btns.forEach(function(b) { b.classList.remove('active'); });
-    var labels = { auto: 0, low: 1, high: 2 };
+    var labels = { day: 0, night: 1, auto: 2 };
     btns[labels[mode]].classList.add('active');
-    localStorage.setItem('gainBoost', mode);
+    localStorage.setItem('dayNight', mode);
 }
-(function restoreGainBoost() {
-    var saved = localStorage.getItem('gainBoost');
-    if (saved && saved !== 'auto') setGainBoost(saved);
+(function restoreDayNight() {
+    var saved = localStorage.getItem('dayNight');
+    if (saved && saved !== 'day') setDayNight(saved);
 })();
 
 // ------------------------------------------------------------
