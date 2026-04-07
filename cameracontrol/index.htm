@@ -1657,12 +1657,95 @@ function parseCamData(lines) {
         if (key === 'OID') { info.push(['Model (camera hardware)', val]); return; }
         if (key === 'TITLE') { info.push(['Camera Name (user-assigned label)', val]); return; }
         if (key === 'OAF') { info.push(['Auto Focus (lens focus mode)', val === '1' ? 'ON (camera focuses automatically)' : 'OFF (manual focus)']); return; }
-        if (key === 'OGU') { info.push(['Gain (signal amplification)', val === '80' ? 'Auto' : val]); return; }
-        if (key === 'OSH') { info.push(['Shutter (electronic shutter speed)', val === '0' ? 'OFF (auto exposure)' : val]); return; }
+        if (key === 'OGU') {
+            var gv = val.replace(/^0x/i, '');
+            info.push(['Gain (signal amplification)', gv === '80' ? 'Auto' : val]);
+            return;
+        }
+        if (key === 'OSH') {
+            var sv = val.replace(/^0x/i, '');
+            info.push(['Shutter (electronic shutter speed)', sv === '0' ? 'OFF (auto exposure)' : val]);
+            return;
+        }
         if (key === 'DCB') { info.push(['Color Bars (test pattern output)', val === '1' ? 'ON' : 'OFF']); return; }
+        if (key === 'OAW') {
+            var awModes = {'0':'ATW (auto tracking)','1':'AWB A (preset A)','2':'AWB B (preset B)','3':'3200K (tungsten)','4':'5600K (daylight)','5':'Manual'};
+            info.push(['White Balance (color temperature mode)', awModes[val] || val]);
+            return;
+        }
+        if (key === 'ODT') {
+            var dtModes = {'0':'Off (day)','1':'On (night)','2':'Auto'};
+            info.push(['Day/Night (IR cut filter)', dtModes[val] || val]);
+            return;
+        }
+        if (key === 'OTD') {
+            info.push(['Pedestal (black level offset)', val]);
+            return;
+        }
+        if (key === 'OSF') {
+            var nrLevels = {'0':'Off','1':'Low','2':'Mid','3':'High'};
+            info.push(['Noise Reduction (digital NR level)', nrLevels[val] || val]);
+            return;
+        }
+        if (key === 'OBR') {
+            info.push(['Brightness (luminance level)', val]);
+            return;
+        }
+        if (key === 'OIS') {
+            info.push(['Image Stabilizer (vibration compensation)', val === '1' ? 'ON' : val === '0' ? 'OFF' : val]);
+            return;
+        }
+        if (key === 'ODE') {
+            info.push(['Detail (sharpness/edge enhancement)', val]);
+            return;
+        }
+        if (key === 'ORG') {
+            info.push(['R Gain (red color correction)', val]);
+            return;
+        }
+        if (key === 'OBG') {
+            info.push(['B Gain (blue color correction)', val]);
+            return;
+        }
+        if (key === 'OER') {
+            info.push(['Error Status (hardware faults)', val === '0' ? 'None' : val]);
+            return;
+        }
+        if (key === 'OUS') {
+            info.push(['Output (signal output setting)', val]);
+            return;
+        }
+        // Multi-key commands: OSE, OSA, OSD (key:subkey:value)
         if (key === 'OSE') {
             var parts = line.split(':');
             if (parts[1] === '71') { var modes = {'0':'A (slow)','1':'B (medium)','2':'C (fast)'}; info.push(['Preset Speed Mode (recall speed table)', modes[parts[2]] || parts[2]]); }
+            return;
+        }
+        if (key === 'OSA') {
+            var saParts = line.split(':');
+            var saSubMap = {
+                '87': 'Scene: Sensitivity (low-light gain)',
+                '30': 'Scene: AGC Max Gain (auto gain ceiling)'
+            };
+            var saLabel = saSubMap[saParts[1]] || ('Scene (' + saParts[1] + ')');
+            info.push([saLabel, saParts.slice(2).join(':') || val]);
+            return;
+        }
+        if (key === 'OSD') {
+            var osdParts = line.split(':');
+            var osdSubMap = {
+                '48': 'Detail Level (sharpness amount)',
+                '49': 'Chroma Level (color saturation)',
+                '4F': 'Master Pedestal (black level via OSD)',
+                'B1': 'Chroma Suppress (low-light color reduction)',
+                'B2': 'Day/Night Trigger (force mode)',
+                'B3': 'Back Light Comp (backlight compensation)',
+                'B7': 'Auto Sensitivity (day/night threshold)',
+                'BA': 'Color Bar Type (test pattern style)',
+                'BE': 'Title Display (name overlay on bars)'
+            };
+            var osdLabel = osdSubMap[osdParts[1]] || ('OSD (' + osdParts[1] + ')');
+            info.push([osdLabel, osdParts.slice(2).join(':') || val]);
             return;
         }
 
