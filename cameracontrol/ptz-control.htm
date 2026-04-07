@@ -469,6 +469,7 @@ function buildPresetDropdown() {
 function onPresetSelect(sel) {
     var num = parseInt(sel.value);
     if (existingPresets[num]) {
+        document.getElementById('presetName').value = existingPresets[num];
         if (confirm('Preset ' + num + ' ("' + existingPresets[num] + '") already exists.\n\nGo to this preset?')) {
             var cmdIdx = (num - 1).toString().padStart(2, '0');
             fetch('/cam/ptz?cmd=%23R' + cmdIdx + '&res=1').catch(function(){});
