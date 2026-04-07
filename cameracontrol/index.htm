@@ -973,6 +973,11 @@
                             <button onclick="setDayNight('night')">Night</button>
                             <button onclick="setDayNight('auto')">Auto</button>
                         </div>
+                        <div class="settings-seg" id="dayNightLevelSeg" style="display:none; margin-top:6px;">
+                            <button onclick="setDayNightLevel(0)">Low</button>
+                            <button class="active" onclick="setDayNightLevel(1)">Med</button>
+                            <button onclick="setDayNightLevel(2)">High</button>
+                        </div>
                     </div>
                     <div class="settings-divider"></div>
                     <button class="settings-action-btn" onclick="autoAdjustImage()">&#9881; Auto Adjust Image</button>
@@ -1519,24 +1524,42 @@ switchToMJPEG();
 // ------------------------------------------------------------
 // DAY / NIGHT MODE
 // ------------------------------------------------------------
-// ODT command via aw_cam — confirmed from HE40 camdata dumps.
-// All three HE40 cameras report ODT:1 (night mode).
-// Same command used by the camera's admin/setup_camera_detail.html page.
+// Captured from actual camera admin UI (setup_camera_detail.html):
+//   Night: #D61 (aw_ptz) + OSD:B2:0 (aw_cam)
+//   Day:   #D60 (aw_ptz) + OSD:B2:0 (aw_cam)
+//   Auto:  #D61 (aw_ptz)  — camera auto-switches based on light
+// Auto sensitivity level: OSD:B7:0 (Low), OSD:B7:1 (Med), OSD:B7:2 (High)
 function setDayNight(mode) {
-    var cmds = { day: '0', night: '1', auto: '2' };
-    var val = cmds[mode];
-    if (val === undefined) return;
-    fetch('/cam/cam?cmd=ODT:' + val + '&res=1').catch(function(){});
+    if (mode === 'day') {
+        fetch('/cam/ptz?cmd=%23D60&res=1').catch(function(){});
+        fetch('/cam/cam?cmd=OSD:B2:0&res=1').catch(function(){});
+    } else if (mode === 'night') {
+        fetch('/cam/ptz?cmd=%23D61&res=1').catch(function(){});
+        fetch('/cam/cam?cmd=OSD:B2:0&res=1').catch(function(){});
+    } else if (mode === 'auto') {
+        fetch('/cam/ptz?cmd=%23D61&res=1').catch(function(){});
+    }
     // Update button state
     var btns = document.querySelectorAll('#dayNightSeg button');
     btns.forEach(function(b) { b.classList.remove('active'); });
     var labels = { day: 0, night: 1, auto: 2 };
     btns[labels[mode]].classList.add('active');
+    // Show/hide auto sensitivity level
+    document.getElementById('dayNightLevelSeg').style.display = mode === 'auto' ? 'flex' : 'none';
     localStorage.setItem('dayNight', mode);
+}
+function setDayNightLevel(level) {
+    fetch('/cam/cam?cmd=OSD:B7:' + level + '&res=1').catch(function(){});
+    var btns = document.querySelectorAll('#dayNightLevelSeg button');
+    btns.forEach(function(b) { b.classList.remove('active'); });
+    btns[level].classList.add('active');
+    localStorage.setItem('dayNightLevel', level);
 }
 (function restoreDayNight() {
     var saved = localStorage.getItem('dayNight');
     if (saved && saved !== 'day') setDayNight(saved);
+    var level = localStorage.getItem('dayNightLevel');
+    if (level !== null) setDayNightLevel(parseInt(level));
 })();
 
 // ------------------------------------------------------------
