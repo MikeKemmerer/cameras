@@ -967,11 +967,11 @@
                     </label>
                     <div class="settings-divider"></div>
                     <div class="settings-group">
-                        <span class="settings-group-label">Night Mode</span>
-                        <div class="settings-seg" id="nightModeSeg">
-                            <button class="active" onclick="setNightMode('off')">Off</button>
-                            <button onclick="setNightMode('on')">On</button>
-                            <button onclick="setNightMode('auto')">Auto</button>
+                        <span class="settings-group-label">Gain Boost</span>
+                        <div class="settings-seg" id="gainBoostSeg">
+                            <button class="active" onclick="setGainBoost('auto')">Auto</button>
+                            <button onclick="setGainBoost('low')">Low</button>
+                            <button onclick="setGainBoost('high')">High</button>
                         </div>
                     </div>
                     <div class="settings-divider"></div>
@@ -1517,26 +1517,26 @@ loadSequences();
 switchToMJPEG();
 
 // ------------------------------------------------------------
-// NIGHT MODE
+// GAIN BOOST
 // ------------------------------------------------------------
-// Night mode command — HE40 may not support IR night mode via CGI.
-// These use the common Panasonic OSD command pattern; test on actual hardware.
-// If the camera returns rER03, the command isn't supported on this model.
-function setNightMode(mode) {
-    var cmds = { off: 'OSA:87:0', on: 'OSA:87:1', auto: 'OSA:87:2' };
-    var cmd = cmds[mode];
-    if (!cmd) return;
-    fetch('/cam/cam?cmd=' + encodeURIComponent(cmd) + '&res=1').catch(function(){});
+// The HE40 does not have IR night mode. Instead, gain boost increases
+// sensor amplification for low-light situations via OGU: command.
+// Auto = camera manages gain, Low = 12 dB, High = 24 dB.
+function setGainBoost(mode) {
+    var cmds = { auto: '80', low: '14', high: '20' };
+    var val = cmds[mode];
+    if (!val) return;
+    fetch('/cam/cam?cmd=OGU:' + val + '&res=1').catch(function(){});
     // Update button state
-    var btns = document.querySelectorAll('#nightModeSeg button');
+    var btns = document.querySelectorAll('#gainBoostSeg button');
     btns.forEach(function(b) { b.classList.remove('active'); });
-    var labels = { off: 0, on: 1, auto: 2 };
+    var labels = { auto: 0, low: 1, high: 2 };
     btns[labels[mode]].classList.add('active');
-    localStorage.setItem('nightMode', mode);
+    localStorage.setItem('gainBoost', mode);
 }
-(function restoreNightMode() {
-    var saved = localStorage.getItem('nightMode');
-    if (saved && saved !== 'off') setNightMode(saved);
+(function restoreGainBoost() {
+    var saved = localStorage.getItem('gainBoost');
+    if (saved && saved !== 'auto') setGainBoost(saved);
 })();
 
 // ------------------------------------------------------------
@@ -1568,10 +1568,19 @@ function showCamInfo() {
     overlay.classList.add('open');
 
     fetch('/cam/status')
-        .then(function(r) { return r.text(); })
+        .then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.text();
+        })
         .then(function(text) {
             var lines = text.split(/\r?\n/).filter(function(l) { return l.trim(); });
             var info = parseCamData(lines);
+            if (info.length === 0) {
+                // Parsing found nothing — show raw response for debugging
+                body.innerHTML = '<div style="font-size:12px;color:var(--meta-fg);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;">' +
+                    escapeHtml(text.substring(0, 2000)) + '</div>';
+                return;
+            }
             var html = '<table>';
             info.forEach(function(row) {
                 html += '<tr><td>' + escapeHtml(row[0]) + '</td><td>' + escapeHtml(row[1]) + '</td></tr>';
@@ -1579,42 +1588,48 @@ function showCamInfo() {
             html += '</table>';
             body.innerHTML = html;
         })
-        .catch(function() {
+        .catch(function(err) {
             body.innerHTML = '<div class="cam-info-loading" style="color:var(--stop-bg);">' +
-                'Failed to fetch camera info.<br><small>Ensure /cam/status proxy is configured in Apache.</small></div>';
+                'Failed to fetch camera info.<br><small>' + escapeHtml(String(err)) +
+                '<br>Ensure /cam/status proxy is configured in Apache and Apache has been reloaded.</small></div>';
         });
 }
 
 function parseCamData(lines) {
     var info = [];
-    var labelMap = {
-        'OID': 'Model',
-        'TITLE': 'Name',
+    var exactMap = {
         'p1': ['Power', 'ON'],
         'p0': ['Power', 'OFF'],
         'iNS0': ['Mount', 'Desktop'],
         'iNS1': ['Mount', 'Hanging'],
         'dA0': ['Tally', 'OFF'],
         'dA1': ['Tally', 'ON'],
-        'd30': ['Iris Mode', 'Auto'],
-        'd31': ['Iris Mode', 'Manual'],
+        'd30': ['Iris Mode', 'Manual'],
+        'd31': ['Iris Mode', 'Auto'],
     };
 
     lines.forEach(function(line) {
-        line = line.trim();
+        // Strip any HTML tags (camdata.html may have markup)
+        line = line.replace(/<[^>]*>/g, '').trim();
         if (!line) return;
 
         // Check exact-match labels first
-        if (labelMap[line]) {
-            var pair = labelMap[line];
-            info.push(pair);
+        if (exactMap[line]) {
+            info.push(exactMap[line]);
+            return;
+        }
+
+        // Firmware version (no colon, starts with qSV3)
+        if (line.substring(0, 4) === 'qSV3') {
+            info.push(['Firmware', line.substring(4)]);
             return;
         }
 
         // Colon-separated key:value
-        var parts = line.split(':');
-        var key = parts[0];
-        var val = parts.slice(1).join(':');
+        var idx = line.indexOf(':');
+        if (idx === -1) return;
+        var key = line.substring(0, idx);
+        var val = line.substring(idx + 1);
 
         if (key === 'OID') { info.push(['Model', val]); return; }
         if (key === 'TITLE') { info.push(['Camera Name', val]); return; }
@@ -1622,8 +1637,11 @@ function parseCamData(lines) {
         if (key === 'OGU') { info.push(['Gain', val === '80' ? 'Auto' : val]); return; }
         if (key === 'OSH') { info.push(['Shutter', val === '0' ? 'OFF' : val]); return; }
         if (key === 'DCB') { info.push(['Color Bars', val === '1' ? 'ON' : 'OFF']); return; }
-        if (key === 'OSE' && parts[1] === '71') { var modes = {'0':'A','1':'B','2':'C'}; info.push(['Preset Mode', modes[parts[2]] || parts[2]]); return; }
-        if (key.match(/^qSV/)) { info.push(['Firmware', val]); return; }
+        if (key === 'OSE') {
+            var parts = line.split(':');
+            if (parts[1] === '71') { var modes = {'0':'A','1':'B','2':'C'}; info.push(['Preset Mode', modes[parts[2]] || parts[2]]); }
+            return;
+        }
 
         // Fallback: show as raw if it looks meaningful
         if (val && key.length <= 6) {
