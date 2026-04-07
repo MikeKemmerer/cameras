@@ -396,7 +396,7 @@
             <div class="save-section">
                 <div class="save-row">
                     <label>Number</label>
-                    <select id="presetNum">
+                    <select id="presetNum" onchange="onPresetSelect(this)">
                         <option value="" disabled selected>Loading…</option>
                     </select>
                 </div>
@@ -455,7 +455,7 @@ function buildPresetDropdown() {
         opt.value = i;
         if (existingPresets[i]) {
             opt.textContent = i + ' \u2014 ' + existingPresets[i] + ' (in use)';
-            opt.disabled = true;
+            opt.className = 'in-use';
         } else {
             opt.textContent = i + ' \u2014 available';
             opt.className = 'available';
@@ -464,6 +464,17 @@ function buildPresetDropdown() {
         sel.appendChild(opt);
     }
     if (firstAvailable) sel.value = firstAvailable;
+}
+
+function onPresetSelect(sel) {
+    var num = parseInt(sel.value);
+    if (existingPresets[num]) {
+        if (confirm('Preset ' + num + ' ("' + existingPresets[num] + '") already exists.\n\nGo to this preset?')) {
+            var cmdIdx = (num - 1).toString().padStart(2, '0');
+            fetch('/cam/ptz?cmd=%23R' + cmdIdx + '&res=1').catch(function(){});
+            showToast('Moving to preset ' + num + ': ' + existingPresets[num]);
+        }
+    }
 }
 
 // ============================================================
@@ -665,10 +676,11 @@ function savePreset() {
         return;
     }
 
-    // Block overwriting existing presets
-    if (existingPresets[num]) {
-        showToast('Preset ' + num + ' already exists (\"' + existingPresets[num] + '\"). Use a different number.', true);
-        return;
+    var overwriting = !!existingPresets[num];
+    if (overwriting) {
+        if (!confirm('Preset ' + num + ' ("' + existingPresets[num] + '") already exists.\n\nOverwrite it with "' + name + '"?')) {
+            return;
+        }
     }
 
     // Send save-position command to camera (0-indexed)
@@ -679,6 +691,7 @@ function savePreset() {
     var fd = new FormData();
     fd.append('number', num);
     fd.append('label', name);
+    if (overwriting) fd.append('overwrite', '1');
     if (capturedBlob) {
         fd.append('thumbnail', capturedBlob, 'preset' + num + '.jpg');
     }

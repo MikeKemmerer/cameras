@@ -81,20 +81,37 @@ if (file_exists($presetsFile)) {
     }
 }
 
-// Reject if preset number already exists (no overwrites)
-foreach ($presets as $p) {
+$overwrite = isset($_POST['overwrite']) && $_POST['overwrite'] === '1';
+
+// Check if preset number already exists
+$existingIdx = null;
+foreach ($presets as $idx => $p) {
     if (isset($p['number']) && intval($p['number']) === $number) {
-        http_response_code(409);
-        echo json_encode(['ok' => false, 'error' => 'Preset ' . $number . ' already exists ("' . $p['label'] . '"). Cannot overwrite.']);
-        exit;
+        $existingIdx = $idx;
+        break;
     }
 }
 
-$presets[] = [
-    'number' => $number,
-    'label'  => $label,
-    'image'  => $imagePath,
-];
+if ($existingIdx !== null && !$overwrite) {
+    http_response_code(409);
+    echo json_encode(['ok' => false, 'error' => 'Preset ' . $number . ' already exists ("' . $presets[$existingIdx]['label'] . '"). Cannot overwrite.']);
+    exit;
+}
+
+if ($existingIdx !== null) {
+    // Overwrite existing entry
+    $presets[$existingIdx] = [
+        'number' => $number,
+        'label'  => $label,
+        'image'  => $imagePath,
+    ];
+} else {
+    $presets[] = [
+        'number' => $number,
+        'label'  => $label,
+        'image'  => $imagePath,
+    ];
+}
 
 // Sort by preset number
 usort($presets, function($a, $b) {
