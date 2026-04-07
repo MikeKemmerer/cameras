@@ -1621,14 +1621,14 @@ function showCamInfo() {
 function parseCamData(lines) {
     var info = [];
     var exactMap = {
-        'p1': ['Power', 'ON'],
-        'p0': ['Power', 'OFF'],
-        'iNS0': ['Mount', 'Desktop'],
-        'iNS1': ['Mount', 'Hanging'],
-        'dA0': ['Tally', 'OFF'],
-        'dA1': ['Tally', 'ON'],
-        'd30': ['Iris Mode', 'Manual'],
-        'd31': ['Iris Mode', 'Auto'],
+        'p1': ['Power (on/off state)', 'ON'],
+        'p0': ['Power (on/off state)', 'OFF'],
+        'iNS0': ['Mount (installation orientation)', 'Desktop (upright)'],
+        'iNS1': ['Mount (installation orientation)', 'Hanging (inverted)'],
+        'dA0': ['Tally (red indicator light)', 'OFF'],
+        'dA1': ['Tally (red indicator light)', 'ON'],
+        'd30': ['Iris Mode (aperture control)', 'Manual (user-controlled)'],
+        'd31': ['Iris Mode (aperture control)', 'Auto (camera-controlled)'],
     };
 
     lines.forEach(function(line) {
@@ -1644,7 +1644,7 @@ function parseCamData(lines) {
 
         // Firmware version (no colon, starts with qSV3)
         if (line.substring(0, 4) === 'qSV3') {
-            info.push(['Firmware', line.substring(4)]);
+            info.push(['Firmware (software version)', line.substring(4)]);
             return;
         }
 
@@ -1654,15 +1654,15 @@ function parseCamData(lines) {
         var key = line.substring(0, idx);
         var val = line.substring(idx + 1);
 
-        if (key === 'OID') { info.push(['Model', val]); return; }
-        if (key === 'TITLE') { info.push(['Camera Name', val]); return; }
-        if (key === 'OAF') { info.push(['Auto Focus', val === '1' ? 'ON' : 'OFF']); return; }
-        if (key === 'OGU') { info.push(['Gain', val === '80' ? 'Auto' : val]); return; }
-        if (key === 'OSH') { info.push(['Shutter', val === '0' ? 'OFF' : val]); return; }
-        if (key === 'DCB') { info.push(['Color Bars', val === '1' ? 'ON' : 'OFF']); return; }
+        if (key === 'OID') { info.push(['Model (camera hardware)', val]); return; }
+        if (key === 'TITLE') { info.push(['Camera Name (user-assigned label)', val]); return; }
+        if (key === 'OAF') { info.push(['Auto Focus (lens focus mode)', val === '1' ? 'ON (camera focuses automatically)' : 'OFF (manual focus)']); return; }
+        if (key === 'OGU') { info.push(['Gain (signal amplification)', val === '80' ? 'Auto' : val]); return; }
+        if (key === 'OSH') { info.push(['Shutter (electronic shutter speed)', val === '0' ? 'OFF (auto exposure)' : val]); return; }
+        if (key === 'DCB') { info.push(['Color Bars (test pattern output)', val === '1' ? 'ON' : 'OFF']); return; }
         if (key === 'OSE') {
             var parts = line.split(':');
-            if (parts[1] === '71') { var modes = {'0':'A','1':'B','2':'C'}; info.push(['Preset Mode', modes[parts[2]] || parts[2]]); }
+            if (parts[1] === '71') { var modes = {'0':'A (slow)','1':'B (medium)','2':'C (fast)'}; info.push(['Preset Speed Mode (recall speed table)', modes[parts[2]] || parts[2]]); }
             return;
         }
 
