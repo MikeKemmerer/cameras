@@ -81,25 +81,20 @@ if (file_exists($presetsFile)) {
     }
 }
 
-// Find existing preset or create new entry
-$found = false;
-foreach ($presets as &$p) {
+// Reject if preset number already exists (no overwrites)
+foreach ($presets as $p) {
     if (isset($p['number']) && intval($p['number']) === $number) {
-        $p['label'] = $label;
-        $p['image'] = $imagePath;
-        $found = true;
-        break;
+        http_response_code(409);
+        echo json_encode(['ok' => false, 'error' => 'Preset ' . $number . ' already exists ("' . $p['label'] . '"). Cannot overwrite.']);
+        exit;
     }
 }
-unset($p);
 
-if (!$found) {
-    $presets[] = [
-        'number' => $number,
-        'label'  => $label,
-        'image'  => $imagePath,
-    ];
-}
+$presets[] = [
+    'number' => $number,
+    'label'  => $label,
+    'image'  => $imagePath,
+];
 
 // Sort by preset number
 usort($presets, function($a, $b) {

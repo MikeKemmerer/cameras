@@ -416,6 +416,21 @@
 if (localStorage.getItem('darkMode') === '1') document.body.classList.add('dark');
 
 // ============================================================
+// EXISTING PRESETS (overwrite protection)
+// ============================================================
+var existingPresets = {}; // keyed by number
+(function loadExistingPresets() {
+    fetch('presets.json', { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(presets) {
+            presets.forEach(function(p) {
+                existingPresets[p.number] = p.label;
+            });
+        })
+        .catch(function() {});
+})();
+
+// ============================================================
 // PAN/TILT JOYSTICK
 // ============================================================
 (function() {
@@ -614,6 +629,12 @@ function savePreset() {
         return;
     }
 
+    // Block overwriting existing presets
+    if (existingPresets[num]) {
+        showToast('Preset ' + num + ' already exists (\"' + existingPresets[num] + '\"). Use a different number.', true);
+        return;
+    }
+
     // Send save-position command to camera (0-indexed)
     var cmdIdx = (num - 1).toString().padStart(2, '0');
     fetch('/cam/ptz?cmd=%23M' + cmdIdx + '&res=1').catch(function(){});
@@ -631,6 +652,7 @@ function savePreset() {
         .then(function(data) {
             if (data.ok) {
                 showToast('Preset ' + num + ' saved: ' + name);
+                existingPresets[num] = name; // prevent re-saving same number
                 capturedBlob = null;
             } else {
                 showToast('Server error: ' + (data.error || 'unknown'), true);
