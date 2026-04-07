@@ -286,6 +286,17 @@
     .btn-danger { background: var(--stop-bg); }
     .btn-danger:hover { background: var(--stop-hover); }
 
+    .save-row select option:disabled {
+        color: #999;
+        font-style: italic;
+    }
+    body.dark .save-row select option:disabled {
+        color: #555;
+    }
+    .save-row select option.available {
+        font-weight: 600;
+    }
+
     body.dark .ctrl-section { border: 1px solid #000; }
     body.dark .save-row input, body.dark .save-row select {
         background: #222;
@@ -385,7 +396,9 @@
             <div class="save-section">
                 <div class="save-row">
                     <label>Number</label>
-                    <input type="number" id="presetNum" min="1" max="100" value="1" placeholder="1-100">
+                    <select id="presetNum">
+                        <option value="" disabled selected>Loading…</option>
+                    </select>
                 </div>
                 <div class="save-row">
                     <label>Name</label>
@@ -426,9 +439,32 @@ var existingPresets = {}; // keyed by number
             presets.forEach(function(p) {
                 existingPresets[p.number] = p.label;
             });
+            buildPresetDropdown();
         })
-        .catch(function() {});
+        .catch(function() {
+            buildPresetDropdown();
+        });
 })();
+
+function buildPresetDropdown() {
+    var sel = document.getElementById('presetNum');
+    sel.innerHTML = '';
+    var firstAvailable = null;
+    for (var i = 1; i <= 100; i++) {
+        var opt = document.createElement('option');
+        opt.value = i;
+        if (existingPresets[i]) {
+            opt.textContent = i + ' \u2014 ' + existingPresets[i] + ' (in use)';
+            opt.disabled = true;
+        } else {
+            opt.textContent = i + ' \u2014 available';
+            opt.className = 'available';
+            if (!firstAvailable) firstAvailable = i;
+        }
+        sel.appendChild(opt);
+    }
+    if (firstAvailable) sel.value = firstAvailable;
+}
 
 // ============================================================
 // PAN/TILT JOYSTICK
@@ -621,7 +657,7 @@ function savePreset() {
     var name = document.getElementById('presetName').value.trim();
 
     if (!num || num < 1 || num > 100) {
-        showToast('Preset number must be 1-100', true);
+        showToast('Select a preset number', true);
         return;
     }
     if (!name) {
@@ -652,7 +688,8 @@ function savePreset() {
         .then(function(data) {
             if (data.ok) {
                 showToast('Preset ' + num + ' saved: ' + name);
-                existingPresets[num] = name; // prevent re-saving same number
+                existingPresets[num] = name;
+                buildPresetDropdown(); // refresh dropdown
                 capturedBlob = null;
             } else {
                 showToast('Server error: ' + (data.error || 'unknown'), true);
