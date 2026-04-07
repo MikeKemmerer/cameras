@@ -1674,8 +1674,7 @@ function parseCamData(lines) {
             return;
         }
         if (key === 'ODT') {
-            var dtModes = {'0':'Off (day)','1':'On (night)','2':'Auto'};
-            info.push(['Day/Night (IR cut filter)', dtModes[val] || val]);
+            info.push(['ODT (unknown)', val]);
             return;
         }
         if (key === 'OTD') {
