@@ -566,7 +566,7 @@
     @media (max-width: 1024px) and (orientation: landscape) {
         body {
             display: grid;
-            grid-template-columns: 35% 1fr;
+            grid-template-columns: 45% 1fr;
             grid-template-rows: auto 1fr;
         }
         header {
@@ -604,6 +604,9 @@
 
     /* === MOBILE PORTRAIT: stacked vertically === */
     @media (max-width: 700px) {
+        .header-left {
+            display: none;
+        }
         .layout {
             flex-direction: column;
         }
