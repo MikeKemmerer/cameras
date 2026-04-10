@@ -15,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Camera MJPEG stream — grab a single frame via HTTP
-$mjpegUrl = 'http://172.25.0.200/cgi-bin/mjpeg';
+// Camera MJPEG stream — use the local Apache proxy (already configured)
+$mjpegUrl = 'http://localhost/mjpeg';
 
 $captureDir = __DIR__ . '/captures';
 if (!is_dir($captureDir)) {
