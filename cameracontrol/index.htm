@@ -1108,7 +1108,7 @@
 // Wake Lock removed
 
 
-const LIVE_URL = "/mjpeg";            // proxied MJPEG
+const LIVE_URL = "/mjpeg?streamid=3";  // low-quality, high-framerate preview
 const HLS_URL  = "/hls/2.m3u8";  // proxied HLS
 
 // ------------------------------------------------------------
@@ -1182,7 +1182,7 @@ function switchToMJPEG() {
     video.style.display = "none";
 
     img.style.display = "block";
-    img.src = LIVE_URL + "?t=" + Date.now(); // cache-bust to force reconnect
+    img.src = LIVE_URL + "&t=" + Date.now(); // cache-bust to force reconnect
 }
 
 function switchToHLS() {

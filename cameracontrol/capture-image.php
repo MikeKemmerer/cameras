@@ -15,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Camera MJPEG stream — use the local Apache proxy (already configured)
-$mjpegUrl = 'http://localhost/mjpeg';
+// Camera MJPEG stream — use high-quality feed (feed 2) via local proxy
+$mjpegUrl = 'http://localhost/mjpeg?streamid=2';
 
 $captureDir = __DIR__ . '/captures';
 if (!is_dir($captureDir)) {
