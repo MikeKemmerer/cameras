@@ -916,6 +916,81 @@
     .speed-modal-btn.secondary:hover {
         opacity: 0.85;
     }
+
+    /* === CAPTURES GALLERY === */
+    .gallery-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.6);
+        z-index: 200;
+        align-items: center;
+        justify-content: center;
+    }
+    .gallery-overlay.open {
+        display: flex;
+    }
+    .gallery-modal {
+        background: var(--panel);
+        border-radius: 10px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        padding: 20px 24px;
+        max-width: 720px;
+        width: 92%;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+    }
+    .gallery-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+    .gallery-header h3 {
+        margin: 0;
+        font-size: 16px;
+        color: var(--fg);
+    }
+    .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    .gallery-item {
+        position: relative;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 2px solid var(--card-border);
+        cursor: pointer;
+        transition: border-color 0.15s;
+    }
+    .gallery-item:hover {
+        border-color: var(--accent);
+    }
+    .gallery-item img {
+        width: 100%;
+        display: block;
+    }
+    .gallery-item .gallery-label {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.7);
+        color: #eee;
+        font-size: 10px;
+        padding: 3px 6px;
+        text-align: center;
+    }
+    .gallery-empty {
+        text-align: center;
+        padding: 30px;
+        color: var(--meta-fg);
+        font-size: 14px;
+    }
 </style>
 </head>
 <body>
@@ -925,6 +1000,7 @@
         <h2>Camera Presets</h2>
     </div>
     <div class="header-right">        <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop Sequence</button>        <button onclick="captureStill()">&#128247; Capture</button>
+        <button onclick="showGallery()">&#128444; Gallery</button>
         <button onclick="switchToMJPEG()">MJPEG</button>
         <button onclick="switchToHLS()">HLS w/ &#128265;</button>
     </div>
@@ -1792,6 +1868,49 @@ function captureStill() {
             btn.disabled = false;
         });
 }
+// ------------------------------------------------------------
+// CAPTURES GALLERY
+// ------------------------------------------------------------
+function showGallery() {
+    var overlay = document.getElementById('galleryOverlay');
+    var grid = document.getElementById('galleryGrid');
+    grid.innerHTML = '<div class="gallery-empty">Loading&hellip;</div>';
+    overlay.classList.add('open');
+
+    fetch('list-captures.php')
+        .then(function(r) { return r.json(); })
+        .then(function(captures) {
+            if (captures.length === 0) {
+                grid.innerHTML = '<div class="gallery-empty">No captures yet. Use the Capture button to save images.</div>';
+                return;
+            }
+            grid.innerHTML = '';
+            captures.forEach(function(c) {
+                var item = document.createElement('div');
+                item.className = 'gallery-item';
+                item.onclick = function() { window.open(c.path); };
+
+                var img = document.createElement('img');
+                img.src = c.path;
+                img.loading = 'lazy';
+
+                var label = document.createElement('div');
+                label.className = 'gallery-label';
+                label.textContent = c.filename.replace('.jpg', '');
+
+                item.appendChild(img);
+                item.appendChild(label);
+                grid.appendChild(item);
+            });
+        })
+        .catch(function(err) {
+            grid.innerHTML = '<div class="gallery-empty" style="color:var(--stop-bg);">Failed to load captures.</div>';
+        });
+}
+
+function closeGallery() {
+    document.getElementById('galleryOverlay').classList.remove('open');
+}
 </script>
 
 <div class="speed-modal-overlay" id="speedModalOverlay" onclick="if(event.target===this)closeSpeedModal()">
@@ -1807,6 +1926,16 @@ function captureStill() {
         <h3>Camera Info</h3>
         <div id="camInfoBody"><div class="cam-info-loading">Loading&hellip;</div></div>
         <button class="cam-info-close" onclick="closeCamInfo()">Close</button>
+    </div>
+</div>
+
+<div class="gallery-overlay" id="galleryOverlay" onclick="if(event.target===this)closeGallery()">
+    <div class="gallery-modal">
+        <div class="gallery-header">
+            <h3>&#128444; Captures</h3>
+            <button onclick="closeGallery()" style="padding:4px 10px;">Close</button>
+        </div>
+        <div class="gallery-grid" id="galleryGrid"></div>
     </div>
 </div>
 
