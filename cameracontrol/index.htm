@@ -921,7 +921,8 @@
     <div class="header-left">
         <h2>Camera Presets</h2>
     </div>
-    <div class="header-right">        <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop Sequence</button>        <button onclick="switchToMJPEG()">MJPEG</button>
+    <div class="header-right">        <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop Sequence</button>        <button onclick="captureStill()">&#128247; Capture</button>
+        <button onclick="switchToMJPEG()">MJPEG</button>
         <button onclick="switchToHLS()">HLS w/ &#128265;</button>
     </div>
 </header>
@@ -1759,6 +1760,34 @@ function parseCamData(lines) {
 
 function closeCamInfo() {
     document.getElementById('camInfoOverlay').classList.remove('open');
+}
+
+// ------------------------------------------------------------
+// CAPTURE STILL IMAGE
+// ------------------------------------------------------------
+function captureStill() {
+    var btn = event.target;
+    var orig = btn.innerHTML;
+    btn.innerHTML = '&#128247; Capturing...';
+    btn.disabled = true;
+
+    fetch('capture-image.php', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                btn.innerHTML = '&#10003; Saved ' + data.filename;
+                setTimeout(function() { btn.innerHTML = orig; btn.disabled = false; }, 3000);
+            } else {
+                alert('Capture failed: ' + (data.error || 'Unknown error'));
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
+        })
+        .catch(function(err) {
+            alert('Capture failed: ' + err);
+            btn.innerHTML = orig;
+            btn.disabled = false;
+        });
 }
 </script>
 
