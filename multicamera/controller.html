@@ -133,6 +133,7 @@ body {
 
 /* === TOGGLE BUTTONS === */
 #previewToggle,
+#captureBtn,
 #thumbToggle {
   position: absolute;
   top: 6px;
@@ -147,11 +148,13 @@ body {
 }
 
 #previewToggle:hover,
+#captureBtn:hover,
 #thumbToggle:hover {
   background: var(--button-hover);
 }
 
 #previewToggle { left: 6px; }
+#captureBtn { left: 50%; transform: translateX(-50%); font-size: 16px; padding: 6px 12px; }
 #thumbToggle { right: 6px; }
 
 /* Hide only the preview video area */
@@ -202,17 +205,420 @@ body {
 .preset button:hover {
   background: var(--button-hover);
 }
+
+/* === TAB BAR === */
+#tabBar {
+  display: flex;
+  align-items: center;
+  background: #0d0d0d;
+  border-bottom: 2px solid var(--accent);
+  flex-shrink: 0;
+}
+.tab-btn {
+  padding: 7px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.tab-btn:hover { color: #ccc; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-spacer { flex: 1; }
+.tab-panel { display: none; overflow-y: auto; }
+.tab-panel.active { display: block; }
+
+/* === SPEED SLIDER === */
+.speed-ctrl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #888;
+}
+.speed-ctrl input[type="range"] {
+  width: 50px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #444;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+.speed-ctrl input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+.speed-ctrl input[type="range"]::-moz-range-thumb {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+/* === PTZ CONTROLS === */
+.ptz-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px;
+  gap: 10px;
+}
+.joystick-wrap { display: flex; justify-content: center; }
+.joystick {
+  width: 140px; height: 140px;
+  border-radius: 50%;
+  background: #222;
+  border: 2px solid #333;
+  position: relative;
+  touch-action: none;
+  cursor: crosshair;
+}
+.joystick-crosshair { position: absolute; background: #444; }
+.joystick-crosshair.h { width: 100%; height: 1px; top: 50%; }
+.joystick-crosshair.v { height: 100%; width: 1px; left: 50%; }
+.joystick-knob {
+  position: absolute;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.slider-section { width: 100%; padding: 0 10px; }
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.slider-row span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  min-width: 14px;
+  text-align: center;
+}
+.slider-row input[type="range"] {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: #333;
+  outline: none;
+  cursor: pointer;
+}
+.slider-row input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  cursor: pointer;
+}
+.slider-row input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid #fff;
+  cursor: pointer;
+}
+.focus-btns {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+.focus-btns button {
+  flex: 1;
+  padding: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--button-bg);
+  color: var(--button-fg);
+}
+.focus-btns button:hover { background: var(--button-hover); }
+.focus-btns button.active-toggle {
+  background: #1a5a2a;
+  color: #6fcf6f;
+  border-color: #28a745;
+}
+
+/* === SEQUENCES === */
+.seq-panel-content { padding: 10px; }
+.seq-status {
+  background: var(--panel);
+  border-radius: 6px;
+  border: 1px solid #000;
+  padding: 10px;
+  margin-bottom: 10px;
+  display: none;
+}
+.seq-status.active { display: block; }
+.seq-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.seq-status-name { font-size: 13px; font-weight: 700; color: var(--accent); }
+.seq-status-badge {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(63,169,245,0.15);
+  color: var(--accent);
+  font-weight: 600;
+}
+.seq-loop-toggle {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #999;
+  cursor: pointer;
+}
+.seq-loop-toggle.visible { display: flex; }
+.seq-loop-toggle input { width: 14px; height: 14px; cursor: pointer; accent-color: var(--accent); }
+.seq-steps-progress { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+.seq-step-pip {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  background: #222;
+  color: #888;
+}
+.seq-step-pip.active { background: var(--accent); color: #000; font-weight: 600; }
+.seq-step-pip.done { background: #1a3d1a; color: #6fcf6f; }
+.seq-countdown { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 4px; min-height: 1.2em; }
+.seq-next-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #000;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #1a5a2a;
+  color: #6fcf6f;
+}
+.seq-next-btn:hover { background: #247a38; }
+.seq-grid { display: flex; flex-direction: column; gap: 8px; }
+.seq-card {
+  background: var(--panel);
+  border-radius: 6px;
+  border: 1px solid #000;
+  padding: 10px;
+}
+.seq-card-name { font-size: 13px; font-weight: 700; }
+.seq-card-meta { font-size: 11px; color: #888; margin: 4px 0; }
+.seq-card-steps { font-size: 10px; color: #666; margin-bottom: 6px; line-height: 1.4; }
+.seq-speed-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: #444;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+.seq-mode-btns { display: flex; gap: 4px; }
+.seq-mode-btn {
+  flex: 1;
+  padding: 5px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1px solid #000;
+  border-radius: 3px;
+  cursor: pointer;
+  background: #222;
+  color: var(--button-fg);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.seq-mode-btn:hover { background: #333; }
+#globalStopBtn {
+  display: none;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #5a1a1d;
+  color: #fff;
+  border: 1px solid #000;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+#globalStopBtn.visible { display: inline-block; }
+
+/* === SETTINGS DROPDOWN === */
+.settings-wrap { position: relative; }
+#settingsBtn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #888;
+  padding: 2px 6px;
+  z-index: 10;
+}
+#settingsBtn:hover { color: var(--accent); }
+.settings-dropdown {
+  display: none;
+  position: absolute;
+  right: 6px;
+  top: 100%;
+  margin-top: 2px;
+  background: var(--panel);
+  border: 1px solid #444;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  padding: 8px 10px;
+  z-index: 100;
+  min-width: 160px;
+}
+.settings-dropdown.open { display: flex; flex-direction: column; gap: 6px; }
+.settings-group { display: flex; flex-direction: column; gap: 3px; }
+.settings-group-label { font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; }
+.settings-seg {
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #444;
+}
+.settings-seg button {
+  flex: 1;
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  border: none;
+  border-right: 1px solid #333;
+  background: #222;
+  color: #888;
+  cursor: pointer;
+}
+.settings-seg button:last-child { border-right: none; }
+.settings-seg button.active { background: var(--accent); color: #000; }
+.settings-action-btn {
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  text-align: center;
+}
+.settings-action-btn:hover { background: var(--button-hover); }
+.settings-divider { height: 1px; background: #333; }
+
+/* === MODALS === */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--panel);
+  border-radius: 8px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+  padding: 14px 16px;
+  max-width: 340px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+.modal-box h3 { margin: 0 0 8px; font-size: 14px; }
+.modal-box table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.modal-box td { padding: 3px 6px; border-bottom: 1px solid #333; }
+.modal-box td:first-child { font-weight: 600; color: #888; white-space: nowrap; width: 40%; }
+.modal-close {
+  margin-top: 10px;
+  width: 100%;
+  padding: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--accent);
+  color: white;
+}
+.speed-modal { text-align: center; }
+.speed-modal h3 { margin: 0 0 4px; font-size: 13px; }
+.speed-modal p { font-size: 11px; color: #888; margin: 0 0 10px; }
+.speed-modal-btns { display: flex; flex-direction: column; gap: 6px; }
+.speed-modal-btn {
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.speed-modal-btn.primary { background: var(--accent); color: white; }
+.speed-modal-btn.primary:hover { opacity: 0.9; }
+.speed-modal-btn.secondary { background: #444; color: var(--fg); }
+.speed-modal-btn.secondary:hover { opacity: 0.85; }
 </style>
 </head>
 
 <body>
 
-<!-- TITLE BAR -->
-<div id="titlebar" class="panel">Camera <span id="camLabel"></span> Controls</div>
+<!-- TITLE BAR WITH SETTINGS -->
+<div id="titlebar" class="panel settings-wrap">
+  Camera <span id="camLabel"></span>
+  <button id="settingsBtn" onclick="toggleSettings()">&#9881;</button>
+  <div class="settings-dropdown" id="settingsDropdown">
+    <div id="panasonicSettings">
+      <div class="settings-group">
+        <span class="settings-group-label">Day / Night</span>
+        <div class="settings-seg" id="dayNightSeg">
+          <button class="active" onclick="setDayNight('day')">Day</button>
+          <button onclick="setDayNight('night')">Night</button>
+          <button onclick="setDayNight('auto')">Auto</button>
+        </div>
+        <div class="settings-seg" id="dayNightLevelSeg" style="display:none; margin-top:4px;">
+          <button onclick="setDayNightLevel(0)">Low</button>
+          <button class="active" onclick="setDayNightLevel(1)">Med</button>
+          <button onclick="setDayNightLevel(2)">High</button>
+        </div>
+      </div>
+      <div class="settings-divider"></div>
+      <button class="settings-action-btn" onclick="autoAdjustImage()">&#9881; Auto Adjust</button>
+      <div class="settings-divider"></div>
+    </div>
+    <button class="settings-action-btn" onclick="showCamInfo()">&#8505; Camera Info</button>
+  </div>
+</div>
 
 <!-- PREVIEW WITH TOGGLES -->
 <div id="preview-container" class="panel">
   <button id="previewToggle" class="console-button" onclick="togglePreview()">Preview Off</button>
+  <button id="captureBtn" class="console-button" onclick="captureStill()">&#128247;</button>
   <button id="thumbToggle" class="console-button" onclick="toggleThumbs()">Thumbs Off</button>
 
   <div id="preview-inner">
@@ -220,8 +626,92 @@ body {
   </div>
 </div>
 
-<!-- PRESETS -->
-<div id="presetGrid"></div>
+<!-- TAB BAR -->
+<div id="tabBar">
+  <button class="tab-btn active" onclick="switchTab('presets')">Presets</button>
+  <button class="tab-btn" onclick="switchTab('ptz')">PTZ</button>
+  <button class="tab-btn" onclick="switchTab('seq')">Seq</button>
+  <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop</button>
+  <div class="tab-spacer"></div>
+  <div class="speed-ctrl" id="speedCtrl">
+    <span>S</span>
+    <input type="range" id="speedRange" min="0" max="5" step="1" value="2" oninput="onSpeedChange(this.value)">
+    <span>F</span>
+  </div>
+</div>
+
+<!-- PRESETS TAB -->
+<div id="presetPanel" class="tab-panel active">
+  <div id="presetGrid"></div>
+</div>
+
+<!-- PTZ TAB -->
+<div id="ptzPanel" class="tab-panel">
+  <div class="ptz-section">
+    <div class="joystick-wrap">
+      <div class="joystick" id="joystick">
+        <div class="joystick-crosshair h"></div>
+        <div class="joystick-crosshair v"></div>
+        <div class="joystick-knob" id="joystickKnob"></div>
+      </div>
+    </div>
+    <div class="slider-section">
+      <div class="slider-row">
+        <span>W</span>
+        <input type="range" id="zoomSlider" min="-49" max="49" value="0"
+               oninput="onZoomDrag(this.value)" onchange="onZoomRelease()">
+        <span>T</span>
+      </div>
+      <div class="slider-row" id="focusRow">
+        <span>N</span>
+        <input type="range" id="focusSlider" min="-49" max="49" value="0"
+               oninput="onFocusDrag(this.value)" onchange="onFocusRelease()">
+        <span>F</span>
+      </div>
+      <div class="focus-btns" id="focusBtns">
+        <button id="afBtn" onclick="toggleAutoFocus()">AF: ?</button>
+        <button onclick="triggerOTAF()">OTAF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SEQUENCES TAB -->
+<div id="seqPanel" class="tab-panel">
+  <div class="seq-panel-content">
+    <div class="seq-status" id="seqStatus">
+      <div class="seq-status-header">
+        <span class="seq-status-name" id="seqStatusName"></span>
+        <label class="seq-loop-toggle" id="seqLoopToggle">
+          <input type="checkbox" id="seqLoopCheckbox"> Loop
+        </label>
+        <span class="seq-status-badge" id="seqStatusBadge"></span>
+      </div>
+      <div class="seq-steps-progress" id="seqStepsProgress"></div>
+      <div class="seq-countdown" id="seqCountdown"></div>
+      <div id="seqNextArea"></div>
+    </div>
+    <div class="seq-grid" id="seqGrid"></div>
+  </div>
+</div>
+
+<!-- CAMERA INFO MODAL -->
+<div class="modal-overlay" id="camInfoOverlay" onclick="if(event.target===this)closeCamInfo()">
+  <div class="modal-box">
+    <h3>Camera Info</h3>
+    <div id="camInfoBody">Loading...</div>
+    <button class="modal-close" onclick="closeCamInfo()">Close</button>
+  </div>
+</div>
+
+<!-- SPEED MISMATCH MODAL -->
+<div class="modal-overlay" id="speedModalOverlay" onclick="if(event.target===this)closeSpeedModal()">
+  <div class="modal-box speed-modal">
+    <h3 id="speedModalTitle"></h3>
+    <p id="speedModalMsg"></p>
+    <div class="speed-modal-btns" id="speedModalBtns"></div>
+  </div>
+</div>
 
 <script>
 /* Read GET parameters */
@@ -231,49 +721,174 @@ const ipParam = params.get("ip");
 
 /* Camera mapping — loaded from config */
 let CAMERAS = {};
+let CAM_TYPE = 'panasonic';
+let CAM_IP = '';
+let snapshotTimer = null;
 
+/* Sequence state */
+let sequences = [];
+let activeSeq = null;
+let countdownTimer = null;
+
+/* Speed steps (Panasonic preset recall speed) */
+const speedSteps = [
+  { value: '350', label: 'X-Slow' },
+  { value: '450', label: 'Slow' },
+  { value: '550', label: 'Med' },
+  { value: '650', label: 'Fast' },
+  { value: '750', label: 'X-Fast' },
+  { value: '850', label: 'XX-Fast' }
+];
+let currentSpeedIdx = 2;
+
+/* Auto focus state */
+let autoFocusOn = false;
+
+/* ===== CONFIG LOADING ===== */
 fetch("/multicamera/config/cameras.json")
   .then(r => r.json())
   .then(cfg => {
-    CAMERAS = cfg.cameras || {};
+    const raw = cfg.cameras || {};
+    for (const [k, v] of Object.entries(raw)) {
+      CAMERAS[k] = (typeof v === 'string') ? { ip: v, type: 'panasonic' } : v;
+    }
     initController();
   })
-  .catch(err => {
-    console.error("Failed to load cameras.json:", err);
-  });
+  .catch(err => console.error("Failed to load cameras.json:", err));
 
-function initController() {
-  /* Determine camera IP */
-  const CAMERA_IP = ipParam || CAMERAS[cam];
-
-  /* Update title bar */
-  document.getElementById("camLabel").textContent = cam;
-
-  /* Load preview stream */
-  document.getElementById("preview").src =
-    `/multicamera/cam/${CAMERA_IP}/mjpeg`;
-
-  /* === LOAD PRESETS === */
-  fetch(`/multicamera/config/camera${cam}.json`)
-    .then(r => r.json())
-    .then(data => {
-      const grid = document.getElementById("presetGrid");
-      data.presets.forEach(p => {
-        const div = document.createElement("div");
-        div.className = "preset module";
-        div.innerHTML = `
-          <img src="/multicamera/thumbnails/${cam}/${p.thumb}"
-               onclick="recallPreset(${p.number}, '${CAMERA_IP}')">
-          <button class='console-button' onclick="recallPreset(${p.number}, '${CAMERA_IP}')">
-            ${p.number}: ${p.label}
-          </button>
-        `;
-        grid.appendChild(div);
-      });
-    });
+/* ===== HELPERS ===== */
+function ptzCmd(cmd) {
+  if (CAM_TYPE === 'onvif') return;
+  fetch(`/multicamera/cam/${CAM_IP}/ptz?cmd=%23${cmd}&res=1`).catch(() => {});
 }
 
-/* === PREVIEW TOGGLE === */
+function camCmd(cmd) {
+  if (CAM_TYPE === 'onvif') return;
+  fetch(`/multicamera/cam/${CAM_IP}/cam?cmd=${encodeURIComponent(cmd)}&res=1`).catch(() => {});
+}
+
+/* ===== INIT ===== */
+function initController() {
+  const camCfg = CAMERAS[cam] || {};
+  CAM_IP = ipParam || camCfg.ip;
+  CAM_TYPE = camCfg.type || 'panasonic';
+
+  document.getElementById("camLabel").textContent = camCfg.name || cam;
+
+  /* Preview stream */
+  if (CAM_TYPE === 'onvif') {
+    refreshOnvifSnapshot();
+    snapshotTimer = setInterval(refreshOnvifSnapshot, 500);
+  } else {
+    document.getElementById("preview").src = `/multicamera/cam/${CAM_IP}/mjpeg`;
+  }
+
+  /* Hide Panasonic-specific controls for ONVIF */
+  if (CAM_TYPE === 'onvif') {
+    const ps = document.getElementById('panasonicSettings');
+    if (ps) ps.style.display = 'none';
+    const sc = document.getElementById('speedCtrl');
+    if (sc) sc.style.display = 'none';
+    const fr = document.getElementById('focusRow');
+    if (fr) fr.style.display = 'none';
+    const fb = document.getElementById('focusBtns');
+    if (fb) fb.style.display = 'none';
+  }
+
+  /* Load presets + sequences from config */
+  const configFile = camCfg.config;
+  const configUrl = configFile ? `/multicamera/config/${configFile}` : null;
+
+  if (configUrl) {
+    fetch(configUrl)
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(data => {
+        renderPresets(data.presets || []);
+        if (data.sequences) {
+          sequences = data.sequences;
+          renderSequences();
+        }
+      })
+      .catch(err => {
+        console.warn("Config load failed:", err);
+        loadOnvifPresets();
+      });
+  } else {
+    loadOnvifPresets();
+  }
+
+  /* Init speed */
+  if (CAM_TYPE !== 'onvif') {
+    ptzCmd('UPVS' + speedSteps[currentSpeedIdx].value);
+  }
+
+  /* Query auto focus state */
+  if (CAM_TYPE !== 'onvif') {
+    fetch(`/multicamera/cam/${CAM_IP}/ptz?cmd=%23D1&res=1`)
+      .then(r => r.text())
+      .then(t => {
+        autoFocusOn = t.includes('d11');
+        updateAFButton();
+      })
+      .catch(() => {});
+  }
+}
+
+function loadOnvifPresets() {
+  if (CAM_TYPE !== 'onvif') return;
+  fetch(`/multicamera/onvif-proxy.php?action=getPresets&cam=${cam}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok && data.presets) {
+        const mapped = data.presets.map((p, i) => ({
+          number: i + 1,
+          label: p.name,
+          image: 'none.jpg',
+          token: p.token
+        }));
+        renderPresets(mapped);
+      }
+    })
+    .catch(err => console.error("ONVIF preset discovery failed:", err));
+}
+
+/* ===== PRESETS ===== */
+function renderPresets(presets) {
+  const grid = document.getElementById("presetGrid");
+  grid.innerHTML = '';
+  presets.forEach(p => {
+    const div = document.createElement("div");
+    div.className = "preset module";
+
+    if (CAM_TYPE === 'onvif') {
+      const token = p.token || p.number;
+      div.innerHTML = `
+        <img src="/multicamera/thumbnails/${cam}/${p.image}"
+             onclick="recallPreset('${token}')">
+        <button class='console-button' data-token="${token}" onclick="recallPreset('${token}')">
+          ${p.number}: ${p.label}
+        </button>
+      `;
+    } else {
+      div.innerHTML = `
+        <img src="/multicamera/thumbnails/${cam}/${p.image}"
+             onclick="recallPreset(${p.number})">
+        <button class='console-button' onclick="recallPreset(${p.number})">
+          ${p.number}: ${p.label}
+        </button>
+      `;
+    }
+    grid.appendChild(div);
+  });
+}
+
+/* ===== ONVIF SNAPSHOT POLLING ===== */
+function refreshOnvifSnapshot() {
+  const img = document.getElementById("preview");
+  img.src = `/multicamera/onvif-proxy.php?action=snapshot&cam=${cam}&t=${Date.now()}`;
+}
+
+/* ===== PREVIEW TOGGLE ===== */
 let showPreview = true;
 
 function togglePreview() {
@@ -281,9 +896,19 @@ function togglePreview() {
   document.body.classList.toggle("hide-preview", !showPreview);
   document.getElementById("previewToggle").textContent =
     showPreview ? "Preview Off" : "Preview On";
+
+  if (CAM_TYPE === 'onvif') {
+    if (showPreview && !snapshotTimer) {
+      refreshOnvifSnapshot();
+      snapshotTimer = setInterval(refreshOnvifSnapshot, 500);
+    } else if (!showPreview && snapshotTimer) {
+      clearInterval(snapshotTimer);
+      snapshotTimer = null;
+    }
+  }
 }
 
-/* === THUMBNAIL TOGGLE === */
+/* ===== THUMBNAIL TOGGLE ===== */
 let showThumbs = true;
 
 function toggleThumbs() {
@@ -293,46 +918,523 @@ function toggleThumbs() {
     showThumbs ? "Thumbs Off" : "Thumbs On";
 }
 
-/* === ADAPTIVE PRESET GRID === */
+/* ===== ADAPTIVE PRESET GRID ===== */
 function updatePresetColumns() {
   const grid = document.getElementById("presetGrid");
   const width = window.innerWidth;
-
   let cols = 3;
-
   if (width < 400) cols = 2;
   else if (width < 600) cols = 3;
   else if (width < 800) cols = 4;
   else if (width < 1000) cols = 5;
   else if (width < 1200) cols = 6;
   else cols = 7;
-
   grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
 }
-
 window.addEventListener("resize", updatePresetColumns);
 window.addEventListener("load", updatePresetColumns);
 
-/* === PTZ PRESET RECALL === */
-function recallPreset(num, cameraIp) {
-  const index = num - 1;
-  const cmd = index.toString().padStart(2, "0");
-  const buttons = document.querySelectorAll(`button[onclick="recallPreset(${num}, '${cameraIp}')"]`);
+/* ===== CAPTURE STILL IMAGE ===== */
+function captureStill() {
+  const btn = document.getElementById('captureBtn');
+  const orig = btn.innerHTML;
+  btn.innerHTML = '&#128247; ...';
+  btn.disabled = true;
 
-  fetch(`/multicamera/cam/${cameraIp}/ptz?cmd=%23R${cmd}&res=1`).then(r => {
-    if (!r.ok) throw new Error(r.status);
-    // Momentary flash effect on success
-    buttons.forEach(btn => {
-      btn.classList.add("flash");
-      setTimeout(() => btn.classList.remove("flash"), 180);
+  const body = new URLSearchParams({ cam: cam, ip: CAM_IP, type: CAM_TYPE });
+  fetch('/multicamera/capture-image.php', { method: 'POST', body: body })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        btn.innerHTML = '&#10003; ' + data.filename;
+        setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 3000);
+      } else {
+        btn.innerHTML = '&#10007;';
+        console.error('Capture failed:', data.error);
+        setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2000);
+      }
+    })
+    .catch(err => {
+      btn.innerHTML = '&#10007;';
+      console.error('Capture failed:', err);
+      setTimeout(() => { btn.innerHTML = orig; btn.disabled = false; }, 2000);
     });
-  }).catch(err => {
-    console.error("Preset error:", err);
-    buttons.forEach(btn => {
-      btn.style.outline = '2px solid #d64045';
-      setTimeout(() => { btn.style.outline = ''; }, 1000);
-    });
+}
+
+/* ===== PRESET RECALL ===== */
+function recallPreset(numOrToken) {
+  stopSequence();
+  if (CAM_TYPE === 'onvif') {
+    const body = new URLSearchParams({ action: 'gotoPreset', cam: cam, preset: numOrToken });
+    fetch('/multicamera/onvif-proxy.php', { method: 'POST', body: body }).then(r => {
+      if (!r.ok) throw new Error(r.status);
+      flashButton(`button[data-token="${numOrToken}"]`);
+    }).catch(err => console.error("ONVIF preset error:", err));
+  } else {
+    const index = numOrToken - 1;
+    const cmd = index.toString().padStart(2, "0");
+    fetch(`/multicamera/cam/${CAM_IP}/ptz?cmd=%23R${cmd}&res=1`).then(r => {
+      if (!r.ok) throw new Error(r.status);
+      flashButton(`button[onclick="recallPreset(${numOrToken})"]`);
+    }).catch(err => console.error("Preset error:", err));
+  }
+}
+
+function flashButton(selector) {
+  document.querySelectorAll(selector).forEach(btn => {
+    btn.classList.add("flash");
+    setTimeout(() => btn.classList.remove("flash"), 180);
   });
+}
+
+/* ===== TAB SWITCHING ===== */
+function switchTab(tab) {
+  document.querySelectorAll('#tabBar .tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  const panelMap = { presets: 'presetPanel', ptz: 'ptzPanel', seq: 'seqPanel' };
+  document.getElementById(panelMap[tab]).classList.add('active');
+  const idx = { presets: 0, ptz: 1, seq: 2 }[tab];
+  document.querySelectorAll('#tabBar .tab-btn')[idx].classList.add('active');
+}
+
+/* ===== SETTINGS DROPDOWN ===== */
+function toggleSettings() {
+  document.getElementById('settingsDropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  const titlebar = document.getElementById('titlebar');
+  if (titlebar && !titlebar.contains(e.target)) {
+    document.getElementById('settingsDropdown').classList.remove('open');
+  }
+});
+
+/* ===== SPEED SLIDER ===== */
+function onSpeedChange(idx) {
+  currentSpeedIdx = Number(idx);
+  ptzCmd('UPVS' + speedSteps[currentSpeedIdx].value);
+}
+
+/* ===== PTZ JOYSTICK ===== */
+(function initJoystick() {
+  const pad = document.getElementById('joystick');
+  const knob = document.getElementById('joystickKnob');
+  if (!pad) return;
+  let dragging = false;
+
+  function getPos(e) {
+    const rect = pad.getBoundingClientRect();
+    const touch = e.touches ? e.touches[0] : e;
+    const x = (touch.clientX - rect.left) / rect.width;
+    const y = (touch.clientY - rect.top) / rect.height;
+    return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
+  }
+
+  function sendPT(pos) {
+    const pan = Math.round(pos.x * 98) + 1;
+    const tilt = Math.round((1 - pos.y) * 98) + 1;
+
+    if (CAM_TYPE === 'onvif') {
+      const panVel = (pos.x - 0.5) * 2;
+      const tiltVel = (0.5 - pos.y) * 2;
+      const body = new URLSearchParams({
+        action: 'move', cam: cam,
+        pan: panVel.toFixed(2), tilt: tiltVel.toFixed(2), zoom: '0'
+      });
+      fetch('/multicamera/onvif-proxy.php', { method: 'POST', body: body }).catch(() => {});
+    } else {
+      const pp = pan.toString().padStart(2, '0');
+      const tt = tilt.toString().padStart(2, '0');
+      ptzCmd(`PTS${pp}${tt}`);
+    }
+
+    knob.style.left = (pos.x * 100) + '%';
+    knob.style.top = (pos.y * 100) + '%';
+  }
+
+  function stopPT() {
+    if (CAM_TYPE === 'onvif') {
+      const body = new URLSearchParams({ action: 'stop', cam: cam });
+      fetch('/multicamera/onvif-proxy.php', { method: 'POST', body: body }).catch(() => {});
+    } else {
+      ptzCmd('PTS5050');
+    }
+    knob.style.left = '50%';
+    knob.style.top = '50%';
+  }
+
+  pad.addEventListener('mousedown', e => { dragging = true; sendPT(getPos(e)); e.preventDefault(); });
+  pad.addEventListener('touchstart', e => { dragging = true; sendPT(getPos(e)); e.preventDefault(); }, { passive: false });
+  document.addEventListener('mousemove', e => { if (dragging) sendPT(getPos(e)); });
+  document.addEventListener('touchmove', e => { if (dragging) sendPT(getPos(e)); }, { passive: false });
+  document.addEventListener('mouseup', () => { if (dragging) { dragging = false; stopPT(); } });
+  document.addEventListener('touchend', () => { if (dragging) { dragging = false; stopPT(); } });
+})();
+
+/* ===== ZOOM SLIDER ===== */
+function onZoomDrag(val) {
+  val = Number(val);
+  if (CAM_TYPE === 'onvif') {
+    const zoomVel = val / 49;
+    const body = new URLSearchParams({
+      action: 'move', cam: cam, pan: '0', tilt: '0', zoom: zoomVel.toFixed(2)
+    });
+    fetch('/multicamera/onvif-proxy.php', { method: 'POST', body: body }).catch(() => {});
+  } else {
+    const speed = 50 + val;
+    const ss = speed.toString().padStart(2, '0');
+    ptzCmd('Z' + ss);
+  }
+}
+
+function onZoomRelease() {
+  document.getElementById('zoomSlider').value = 0;
+  if (CAM_TYPE === 'onvif') {
+    const body = new URLSearchParams({ action: 'stop', cam: cam });
+    fetch('/multicamera/onvif-proxy.php', { method: 'POST', body: body }).catch(() => {});
+  } else {
+    ptzCmd('Z50');
+  }
+}
+
+/* ===== FOCUS SLIDER ===== */
+function onFocusDrag(val) {
+  val = Number(val);
+  const speed = 50 + val;
+  const ss = speed.toString().padStart(2, '0');
+  ptzCmd('F' + ss);
+}
+
+function onFocusRelease() {
+  document.getElementById('focusSlider').value = 0;
+  ptzCmd('F50');
+}
+
+/* ===== AUTO FOCUS ===== */
+function toggleAutoFocus() {
+  autoFocusOn = !autoFocusOn;
+  ptzCmd(autoFocusOn ? 'D11' : 'D10');
+  updateAFButton();
+}
+
+function updateAFButton() {
+  const btn = document.getElementById('afBtn');
+  if (!btn) return;
+  btn.textContent = autoFocusOn ? 'AF: On' : 'AF: Off';
+  btn.classList.toggle('active-toggle', autoFocusOn);
+}
+
+function triggerOTAF() {
+  camCmd('OSE:69:1');
+}
+
+/* ===== DAY / NIGHT ===== */
+function setDayNight(mode) {
+  const seg = document.getElementById('dayNightSeg');
+  seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  const levelSeg = document.getElementById('dayNightLevelSeg');
+
+  if (mode === 'day') {
+    ptzCmd('D60');
+    seg.children[0].classList.add('active');
+    levelSeg.style.display = 'none';
+  } else if (mode === 'night') {
+    ptzCmd('D61');
+    seg.children[1].classList.add('active');
+    levelSeg.style.display = 'none';
+  } else {
+    ptzCmd('D61');
+    camCmd('OSD:B2:0');
+    seg.children[2].classList.add('active');
+    levelSeg.style.display = 'flex';
+  }
+}
+
+function setDayNightLevel(level) {
+  camCmd('OSD:B7:' + level);
+  const seg = document.getElementById('dayNightLevelSeg');
+  seg.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  seg.children[level].classList.add('active');
+}
+
+/* ===== AUTO ADJUST IMAGE ===== */
+function autoAdjustImage() {
+  camCmd('OSE:69:1');
+  ptzCmd('D30');
+}
+
+/* ===== CAMERA INFO ===== */
+function showCamInfo() {
+  document.getElementById('settingsDropdown').classList.remove('open');
+  document.getElementById('camInfoOverlay').classList.add('open');
+  document.getElementById('camInfoBody').innerHTML = 'Loading...';
+
+  fetch(`/multicamera/cam/${CAM_IP}/status`)
+    .then(r => r.text())
+    .then(text => {
+      document.getElementById('camInfoBody').innerHTML = parseCamData(text);
+    })
+    .catch(() => {
+      document.getElementById('camInfoBody').innerHTML =
+        '<p style="color:#f66">Failed to load camera data</p>';
+    });
+}
+
+function parseCamData(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  let html = '<table>';
+  for (const line of lines) {
+    const idx = line.indexOf(':');
+    if (idx < 0) continue;
+    const key = line.substring(0, idx).trim();
+    const val = line.substring(idx + 1).trim();
+    html += `<tr><td>${key}</td><td>${val}</td></tr>`;
+  }
+  html += '</table>';
+  return html;
+}
+
+function closeCamInfo() {
+  document.getElementById('camInfoOverlay').classList.remove('open');
+}
+
+/* ===== SEQUENCES ===== */
+function renderSequences() {
+  const grid = document.getElementById('seqGrid');
+  grid.innerHTML = '';
+  if (!sequences.length) {
+    grid.innerHTML = '<p style="color:#888; text-align:center; font-size:12px;">No sequences configured</p>';
+    return;
+  }
+  sequences.forEach((seq, i) => {
+    const totalDelay = seq.steps.reduce((sum, s) => sum + (s.delay || 0), 0);
+    const stepLabels = seq.steps.map(s => s.label || ('P' + s.preset)).join(' \u2192 ');
+    const speedMatch = speedSteps.find(s => s.value === String(seq.speed));
+
+    const card = document.createElement('div');
+    card.className = 'seq-card';
+    card.innerHTML =
+      '<div class="seq-card-name">' + seq.name + '</div>' +
+      '<div class="seq-card-meta">' + seq.steps.length + ' steps \u00b7 ~' + totalDelay + 's total</div>' +
+      (speedMatch ? '<span class="seq-speed-badge">' + speedMatch.label + '</span>' : '') +
+      '<div class="seq-card-steps">' + stepLabels + '</div>' +
+      '<div class="seq-mode-btns">' +
+        '<button class="seq-mode-btn" onclick="startSequence(' + i + ',\'auto\')">&#9654; Auto</button>' +
+        '<button class="seq-mode-btn" onclick="startSequence(' + i + ',\'semi\')">&#9199; Semi</button>' +
+        '<button class="seq-mode-btn" onclick="startSequence(' + i + ',\'boomerang\')">&#8596; Boom</button>' +
+      '</div>';
+    grid.appendChild(card);
+  });
+}
+
+function startSequence(seqIdx, mode) {
+  stopSequence();
+  const seq = sequences[seqIdx];
+  if (!seq || !seq.steps.length) return;
+
+  if (seq.speed && String(seq.speed) !== speedSteps[currentSpeedIdx].value) {
+    showSpeedModal(seq, seqIdx, mode);
+    return;
+  }
+  runSequence(seq, mode);
+}
+
+function runSequence(seq, mode) {
+  activeSeq = { seq: seq, mode: mode, stepIdx: 0, direction: 1, timer: null };
+  document.getElementById('globalStopBtn').classList.add('visible');
+
+  const loopToggle = document.getElementById('seqLoopToggle');
+  if (mode === 'auto') {
+    loopToggle.classList.add('visible');
+  } else {
+    loopToggle.classList.remove('visible');
+  }
+
+  switchTab('seq');
+  executeStep();
+}
+
+function executeStep() {
+  if (!activeSeq) return;
+  const step = activeSeq.seq.steps[activeSeq.stepIdx];
+  if (!step) { stopSequence(); return; }
+
+  updateSeqStatus();
+  recallPresetDirect(step.preset);
+
+  if (activeSeq.mode === 'auto') {
+    const delay = (step.delay || 5) * 1000;
+    startCountdown(step.delay || 5);
+    activeSeq.timer = setTimeout(function() { advanceStep(); }, delay);
+  } else if (activeSeq.mode === 'semi') {
+    showNextButton();
+  } else if (activeSeq.mode === 'boomerang') {
+    const delay = (step.delay || 5) * 1000;
+    startCountdown(step.delay || 5);
+    activeSeq.timer = setTimeout(function() { advanceBoomerang(); }, delay);
+  }
+}
+
+function advanceStep() {
+  if (!activeSeq) return;
+  activeSeq.stepIdx++;
+  if (activeSeq.stepIdx >= activeSeq.seq.steps.length) {
+    if (document.getElementById('seqLoopCheckbox').checked) {
+      activeSeq.stepIdx = 0;
+    } else {
+      stopSequence();
+      return;
+    }
+  }
+  executeStep();
+}
+
+function advanceBoomerang() {
+  if (!activeSeq) return;
+  var nextIdx = activeSeq.stepIdx + activeSeq.direction;
+  if (nextIdx >= activeSeq.seq.steps.length) {
+    activeSeq.direction = -1;
+    activeSeq.stepIdx = activeSeq.seq.steps.length - 2;
+  } else if (nextIdx < 0) {
+    activeSeq.direction = 1;
+    activeSeq.stepIdx = 1;
+  } else {
+    activeSeq.stepIdx = nextIdx;
+  }
+  if (activeSeq.stepIdx < 0 || activeSeq.stepIdx >= activeSeq.seq.steps.length) {
+    stopSequence();
+    return;
+  }
+  executeStep();
+}
+
+function recallPresetDirect(presetNum) {
+  if (CAM_TYPE === 'onvif') {
+    const body = new URLSearchParams({ action: 'gotoPreset', cam: cam, preset: presetNum });
+    fetch('/multicamera/onvif-proxy.php', { method: 'POST', body: body }).catch(() => {});
+  } else {
+    const index = presetNum - 1;
+    const cmd = index.toString().padStart(2, "0");
+    fetch(`/multicamera/cam/${CAM_IP}/ptz?cmd=%23R${cmd}&res=1`).catch(() => {});
+  }
+}
+
+function stopSequence() {
+  if (activeSeq) {
+    if (activeSeq.timer) clearTimeout(activeSeq.timer);
+    activeSeq = null;
+  }
+  if (countdownTimer) {
+    clearInterval(countdownTimer);
+    countdownTimer = null;
+  }
+  document.getElementById('globalStopBtn').classList.remove('visible');
+  document.getElementById('seqStatus').classList.remove('active');
+  document.getElementById('seqLoopToggle').classList.remove('visible');
+  document.getElementById('seqCountdown').textContent = '';
+  document.getElementById('seqNextArea').innerHTML = '';
+}
+
+function updateSeqStatus() {
+  if (!activeSeq) return;
+  var status = document.getElementById('seqStatus');
+  status.classList.add('active');
+
+  document.getElementById('seqStatusName').textContent = activeSeq.seq.name;
+  var modeLabels = { auto: 'Auto', semi: 'Semi-Auto', boomerang: 'Boomerang' };
+  document.getElementById('seqStatusBadge').textContent = modeLabels[activeSeq.mode];
+
+  var pips = document.getElementById('seqStepsProgress');
+  pips.innerHTML = '';
+  activeSeq.seq.steps.forEach(function(s, i) {
+    var pip = document.createElement('span');
+    pip.className = 'seq-step-pip';
+    if (i === activeSeq.stepIdx) pip.classList.add('active');
+    else if (i < activeSeq.stepIdx) pip.classList.add('done');
+    pip.textContent = s.label || ('P' + s.preset);
+    pips.appendChild(pip);
+  });
+}
+
+function startCountdown(seconds) {
+  var el = document.getElementById('seqCountdown');
+  var remaining = seconds;
+  el.textContent = 'Next in ' + remaining + 's';
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(function() {
+    remaining--;
+    if (remaining <= 0) {
+      el.textContent = '';
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    } else {
+      el.textContent = 'Next in ' + remaining + 's';
+    }
+  }, 1000);
+}
+
+function showNextButton() {
+  document.getElementById('seqNextArea').innerHTML =
+    '<button class="seq-next-btn" onclick="advanceSemiStep()">Next &#9654;</button>';
+}
+
+function advanceSemiStep() {
+  if (!activeSeq) return;
+  activeSeq.stepIdx++;
+  if (activeSeq.stepIdx >= activeSeq.seq.steps.length) {
+    stopSequence();
+    return;
+  }
+  executeStep();
+}
+
+/* ===== SPEED MODAL ===== */
+function showSpeedModal(seq, seqIdx, mode) {
+  var seqSpeed = speedSteps.find(function(s) { return s.value === String(seq.speed); });
+  var curSpeed = speedSteps[currentSpeedIdx];
+
+  document.getElementById('speedModalTitle').textContent = 'Speed Mismatch';
+  document.getElementById('speedModalMsg').textContent =
+    '"' + seq.name + '" is designed for ' + (seqSpeed ? seqSpeed.label : seq.speed) +
+    ' speed, but camera is set to ' + curSpeed.label + '.';
+
+  var btns = document.getElementById('speedModalBtns');
+  btns.innerHTML = '';
+
+  var btn1 = document.createElement('button');
+  btn1.className = 'speed-modal-btn primary';
+  btn1.textContent = 'Set to ' + (seqSpeed ? seqSpeed.label : seq.speed) + ' & Start';
+  btn1.onclick = function() {
+    var newIdx = speedSteps.findIndex(function(s) { return s.value === String(seq.speed); });
+    if (newIdx >= 0) {
+      currentSpeedIdx = newIdx;
+      document.getElementById('speedRange').value = newIdx;
+      ptzCmd('UPVS' + speedSteps[newIdx].value);
+    }
+    closeSpeedModal();
+    runSequence(seq, mode);
+  };
+  btns.appendChild(btn1);
+
+  var btn2 = document.createElement('button');
+  btn2.className = 'speed-modal-btn secondary';
+  btn2.textContent = 'Keep ' + curSpeed.label + ' & Start';
+  btn2.onclick = function() {
+    closeSpeedModal();
+    runSequence(seq, mode);
+  };
+  btns.appendChild(btn2);
+
+  var btn3 = document.createElement('button');
+  btn3.className = 'speed-modal-btn secondary';
+  btn3.textContent = 'Cancel';
+  btn3.onclick = function() { closeSpeedModal(); };
+  btns.appendChild(btn3);
+
+  document.getElementById('speedModalOverlay').classList.add('open');
+}
+
+function closeSpeedModal() {
+  document.getElementById('speedModalOverlay').classList.remove('open');
 }
 </script>
 

@@ -1,8 +1,9 @@
 {
   "cameras": {
-    "1": "192.168.1.200",
-    "2": "192.168.1.201",
-    "3": "192.168.1.202",
-    "4": "192.168.1.203"
+    "1": { "ip": "192.168.1.200", "type": "panasonic", "name": "Camera 1", "config": "camera1.json" },
+    "2": { "ip": "192.168.1.201", "type": "panasonic", "name": "Camera 2", "config": "camera2.json" },
+    "3": { "ip": "192.168.1.202", "type": "panasonic", "name": "Camera 3", "config": "camera3.json" },
+    "4": { "ip": "192.168.1.203", "type": "panasonic", "name": "Camera 4", "config": "camera4.json" },
+    "5": { "ip": "192.168.1.100", "type": "onvif", "name": "Lobby Camera" }
   }
 }
