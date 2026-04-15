@@ -19,3 +19,4 @@ multicamera/config/onvif-credentials.php
 
 # Captured still images
 cameracontrol/captures/
+multicamera/captures/

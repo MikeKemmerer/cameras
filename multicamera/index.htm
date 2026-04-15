@@ -136,6 +136,11 @@ body {
   gap: 10px;
   width: 200px;
 }
+#switcherButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 /* === TOGGLE SWITCH === */
 .toggle-wrapper {
@@ -257,6 +262,60 @@ iframe {
   border: none;
   background: #000;
 }
+
+/* === CAPTURES GALLERY === */
+#galleryBtn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 6px 14px;
+  font-size: 14px;
+}
+.gallery-strip {
+  display: none;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 12px;
+  background: #0d0d0d;
+  flex-shrink: 0;
+}
+.gallery-strip.open { display: flex; }
+.gallery-strip::-webkit-scrollbar { height: 6px; }
+.gallery-strip::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+.gallery-strip::-webkit-scrollbar-track { background: transparent; }
+.gallery-item {
+  flex: 0 0 auto;
+  width: 140px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #333;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.gallery-item:hover { border-color: var(--accent); }
+.gallery-item img { width: 140px; height: 79px; object-fit: cover; display: block; }
+.gallery-item .gallery-label {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(0,0,0,0.7);
+  color: #eee;
+  font-size: 9px;
+  padding: 2px 4px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gallery-empty {
+  color: #666;
+  font-size: 12px;
+  padding: 12px;
+  text-align: center;
+  white-space: nowrap;
+}
 </style>
 </head>
 
@@ -265,6 +324,7 @@ iframe {
 <div id="titlebar" class="panel">
   <div id="drawer-toggle">☰</div>
   Saint Demetrios Camera Console
+  <button id="galleryBtn" class="console-button" onclick="toggleGallery()">&#128444; Captures</button>
 </div>
 
 <div id="top-bar">
@@ -286,10 +346,7 @@ iframe {
 </div>
 
 <div id="switcher-column">
-  <button class="console-button" onclick="switchTo(1)">Send Camera 1</button>
-  <button class="console-button" onclick="switchTo(2)">Send Camera 2</button>
-  <button class="console-button" onclick="switchTo(3)">Send Camera 3</button>
-  <button class="console-button" onclick="switchTo(4)">Send Camera 4</button>
+  <div id="switcherButtons"></div>
 
   <label class="toggle-wrapper">
     <span class="toggle-label">Audio Preview</span>
@@ -299,6 +356,8 @@ iframe {
 </div>
 
 </div>
+
+<div class="gallery-strip" id="galleryStrip"></div>
 
 <div id="camera-grid"></div>
 
@@ -373,6 +432,8 @@ function updateCheckboxGlow() {
 
 function renderIframes() {
   grid.innerHTML = "";
+  const switcherBtns = document.getElementById("switcherButtons");
+  switcherBtns.innerHTML = "";
   checkboxes.forEach(cb => {
     localStorage.setItem("cam" + cb.value, cb.checked);
     if (cb.checked) {
@@ -382,6 +443,12 @@ function renderIframes() {
       iframe.src = `/multicamera/controller.html?cam=${cb.value}`;
       wrapper.appendChild(iframe);
       grid.appendChild(wrapper);
+
+      const btn = document.createElement("button");
+      btn.className = "console-button";
+      btn.textContent = "Send Camera " + cb.value;
+      btn.onclick = () => switchTo(Number(cb.value));
+      switcherBtns.appendChild(btn);
     }
   });
 }
@@ -398,6 +465,55 @@ checkboxes.forEach(cb => cb.addEventListener("change", () => {
 }));
 
 renderIframes();
+
+/* === CAPTURES GALLERY === */
+let galleryOpen = false;
+
+function toggleGallery() {
+  galleryOpen = !galleryOpen;
+  const strip = document.getElementById('galleryStrip');
+  if (galleryOpen) {
+    strip.classList.add('open');
+    loadGallery();
+  } else {
+    strip.classList.remove('open');
+  }
+}
+
+function loadGallery() {
+  const strip = document.getElementById('galleryStrip');
+  strip.innerHTML = '<span class="gallery-empty">Loading&hellip;</span>';
+
+  fetch('/multicamera/list-captures.php')
+    .then(r => r.json())
+    .then(captures => {
+      if (!captures.length) {
+        strip.innerHTML = '<span class="gallery-empty">No captures yet. Use the &#128247; button in each camera panel.</span>';
+        return;
+      }
+      strip.innerHTML = '';
+      captures.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'gallery-item';
+        item.onclick = () => window.open(c.path, '_blank');
+
+        const img = document.createElement('img');
+        img.src = c.path;
+        img.loading = 'lazy';
+
+        const label = document.createElement('div');
+        label.className = 'gallery-label';
+        label.textContent = c.label;
+
+        item.appendChild(img);
+        item.appendChild(label);
+        strip.appendChild(item);
+      });
+    })
+    .catch(() => {
+      strip.innerHTML = '<span class="gallery-empty" style="color:#f66;">Failed to load captures</span>';
+    });
+}
 </script>
 
 </body>

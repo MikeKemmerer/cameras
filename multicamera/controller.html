@@ -17,11 +17,17 @@
   --button-hover: #333;
 }
 
-body {
+html, body {
   margin: 0;
+  height: 100%;
+}
+
+body {
   background: var(--bg);
   color: var(--fg);
   font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
@@ -227,7 +233,7 @@ body {
 .tab-btn:hover { color: #ccc; }
 .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
 .tab-spacer { flex: 1; }
-.tab-panel { display: none; overflow-y: auto; }
+.tab-panel { display: none; overflow-y: auto; flex: 1; min-height: 0; }
 .tab-panel.active { display: block; }
 
 /* === SPEED SLIDER === */
