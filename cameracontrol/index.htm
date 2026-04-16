@@ -996,6 +996,91 @@
         color: var(--meta-fg);
         font-size: 14px;
     }
+
+    /* === TUTORIAL WALKTHROUGH === */
+    .tutorial-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9000;
+        pointer-events: none;
+    }
+    .tutorial-overlay.active { display: block; }
+    .tutorial-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        z-index: 9001;
+        pointer-events: auto;
+        transition: clip-path 0.3s ease;
+    }
+    .tutorial-tooltip {
+        position: fixed;
+        z-index: 9003;
+        background: var(--panel, #1b1b1b);
+        border: 2px solid var(--accent, #3fa9f5);
+        border-radius: 10px;
+        padding: 16px 18px;
+        max-width: 320px;
+        width: max-content;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        pointer-events: auto;
+        color: var(--fg, #eee);
+    }
+    .tutorial-tooltip h4 {
+        margin: 0 0 6px;
+        font-size: 14px;
+        color: var(--accent, #3fa9f5);
+    }
+    .tutorial-tooltip p {
+        margin: 0 0 12px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--fg, #eee);
+    }
+    .tutorial-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .tutorial-nav button {
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .tutorial-next {
+        background: var(--accent, #3fa9f5);
+        color: #fff;
+    }
+    .tutorial-next:hover { opacity: 0.85; }
+    .tutorial-back {
+        background: #444;
+        color: #ccc;
+    }
+    .tutorial-back:hover { background: #555; }
+    .tutorial-skip {
+        margin-left: auto;
+        background: transparent;
+        color: #888;
+        text-decoration: underline;
+        padding: 6px 8px;
+    }
+    .tutorial-step-count {
+        font-size: 11px;
+        color: #888;
+        margin-right: auto;
+    }
+    .tutorial-spotlight {
+        position: fixed;
+        z-index: 9002;
+        border-radius: 6px;
+        box-shadow: 0 0 0 4px var(--accent, #3fa9f5), 0 0 16px rgba(63,169,245,0.3);
+        pointer-events: none;
+        transition: all 0.3s ease;
+    }
 </style>
 </head>
 <body>
@@ -1069,6 +1154,8 @@
                     <button class="settings-action-btn" onclick="showCamInfo()">&#128712; Camera Info</button>
                     <div class="settings-divider"></div>
                     <a href="ptz-control.htm" class="settings-action-btn" style="text-decoration:none; display:block;">&#127909; PTZ Control &amp; Presets</a>
+                    <div class="settings-divider"></div>
+                    <button class="settings-action-btn" onclick="startTutorial()">&#10067; Tutorial</button>
                 </div>
             </div>
         </div>
@@ -1916,6 +2003,214 @@ function showGallery() {
 function closeGallery() {
     document.getElementById('galleryOverlay').classList.remove('open');
 }
+
+// ============================================================
+// INTERACTIVE TUTORIAL WALKTHROUGH
+// ============================================================
+var tutorialStep = 0;
+var tutorialSteps = [
+    {
+        title: 'Welcome!',
+        text: 'This tutorial walks you through the camera controller. Click Next to begin, or Skip to exit at any time.',
+        selector: '.preview',
+        setup: function() {
+            closeSettingsDropdown();
+            switchTab('presets');
+        }
+    },
+    {
+        title: 'Live Camera Feed',
+        text: 'This is your live camera view. It shows the current MJPEG stream. You can switch between MJPEG and HLS with the buttons in the header.',
+        selector: '.preview'
+    },
+    {
+        title: 'Selecting a Preset',
+        text: 'Tap any preset card to move the camera to that position. Presets are loaded from your camera config file and show thumbnail previews when enabled.',
+        selector: '#presetGrid',
+        setup: function() {
+            closeSettingsDropdown();
+            switchTab('presets');
+        }
+    },
+    {
+        title: 'Speed Slider',
+        text: 'Controls how fast the camera moves to a preset. S = slow, F = fast. Drag the slider to adjust.',
+        selector: '.speed-slider',
+        setup: function() { closeSettingsDropdown(); }
+    },
+    {
+        title: 'Settings Menu',
+        text: 'Tap the gear icon to open settings. It contains dark mode, thumbnail toggles, Day/Night mode, and more.',
+        selector: '.settings-btn',
+        setup: function() { closeSettingsDropdown(); }
+    },
+    {
+        title: 'Day / Night Mode',
+        text: 'Switch between Day, Night, or Auto mode for the camera\u2019s IR filter. Use Night mode in low-light situations for a clearer image.',
+        selector: '#dayNightSeg',
+        setup: function() { openSettingsDropdown(); }
+    },
+    {
+        title: 'Sequences Tab',
+        text: 'Switch to the Sequences tab to see pre-defined camera movement sequences (like "Great Entrance").',
+        selector: '.tab-bar',
+        setup: function() { closeSettingsDropdown(); }
+    },
+    {
+        title: 'Running a Sequence',
+        text: 'Tap a sequence card to start it. The camera will move through each step automatically with timed dwell periods. Try "Great Entrance" for Sunday services.',
+        selector: '#seqGrid',
+        setup: function() {
+            closeSettingsDropdown();
+            switchTab('sequences');
+        }
+    },
+    {
+        title: 'Sequence Status',
+        text: 'When a sequence is running, this area shows the current step, countdown timer, and upcoming steps. Use the Loop checkbox to repeat automatically, or the Stop button in the header.',
+        selector: '#seqStatus',
+        setup: function() {
+            closeSettingsDropdown();
+            switchTab('sequences');
+        }
+    },
+    {
+        title: 'Capture a Snapshot',
+        text: 'Tap the Capture button in the header to save a high-resolution still image from the camera. Images are stored on the server and viewable in the Gallery.',
+        selector: '.header-right',
+        setup: function() { closeSettingsDropdown(); }
+    },
+    {
+        title: 'PTZ Control & Presets',
+        text: 'For manual camera movement (pan, tilt, zoom) or adding/editing presets, open PTZ Control from the Settings menu. It provides full directional controls and preset save functionality.',
+        selector: '#settingsDropdown a[href="ptz-control.htm"]',
+        setup: function() { openSettingsDropdown(); }
+    },
+    {
+        title: 'You\u2019re All Set!',
+        text: 'That covers the basics. Select presets, adjust settings, run sequences, and use PTZ Control for advanced adjustments. Tap Done to close.',
+        selector: '.preview',
+        setup: function() {
+            closeSettingsDropdown();
+            switchTab('presets');
+        },
+        last: true
+    }
+];
+
+function closeSettingsDropdown() {
+    var dd = document.getElementById('settingsDropdown');
+    if (dd) dd.classList.remove('open');
+}
+
+function openSettingsDropdown() {
+    var dd = document.getElementById('settingsDropdown');
+    if (dd) dd.classList.add('open');
+}
+
+function startTutorial() {
+    closeSettingsDropdown();
+    tutorialStep = 0;
+    document.getElementById('tutorialOverlay').classList.add('active');
+    renderTutorialStep();
+}
+
+function endTutorial() {
+    document.getElementById('tutorialOverlay').classList.remove('active');
+    closeSettingsDropdown();
+}
+
+function tutorialNav(dir) {
+    var next = tutorialStep + dir;
+    if (next < 0) return;
+    if (next >= tutorialSteps.length) { endTutorial(); return; }
+    tutorialStep = next;
+    renderTutorialStep();
+}
+
+function renderTutorialStep() {
+    var step = tutorialSteps[tutorialStep];
+    if (step.setup) step.setup();
+
+    // Brief delay to let DOM settle (e.g., settings dropdown opening)
+    setTimeout(function() {
+        var el = document.querySelector(step.selector);
+        var overlay = document.getElementById('tutorialOverlay');
+        var backdrop = document.getElementById('tutorialBackdrop');
+        var spotlight = document.getElementById('tutorialSpotlight');
+        var tooltip = document.getElementById('tutorialTooltip');
+        var title = document.getElementById('tutorialTitle');
+        var text = document.getElementById('tutorialText');
+        var counter = document.getElementById('tutorialStepCount');
+        var backBtn = document.getElementById('tutorialBackBtn');
+        var nextBtn = document.getElementById('tutorialNextBtn');
+
+        title.textContent = step.title;
+        text.textContent = step.text;
+        counter.textContent = (tutorialStep + 1) + ' / ' + tutorialSteps.length;
+        backBtn.style.display = tutorialStep === 0 ? 'none' : '';
+        nextBtn.textContent = step.last ? 'Done' : 'Next';
+
+        if (el) {
+            var r = el.getBoundingClientRect();
+            var pad = 6;
+
+            // Position spotlight
+            spotlight.style.display = 'block';
+            spotlight.style.left = (r.left - pad) + 'px';
+            spotlight.style.top = (r.top - pad) + 'px';
+            spotlight.style.width = (r.width + pad * 2) + 'px';
+            spotlight.style.height = (r.height + pad * 2) + 'px';
+
+            // Cut hole in backdrop
+            var cx = r.left - pad;
+            var cy = r.top - pad;
+            var cw = r.width + pad * 2;
+            var ch = r.height + pad * 2;
+            var cr = 6;
+            backdrop.style.clipPath =
+                'polygon(evenodd, ' +
+                '0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ' +
+                (cx + cr) + 'px ' + cy + 'px, ' +
+                cx + 'px ' + (cy + cr) + 'px, ' +
+                cx + 'px ' + (cy + ch - cr) + 'px, ' +
+                (cx + cr) + 'px ' + (cy + ch) + 'px, ' +
+                (cx + cw - cr) + 'px ' + (cy + ch) + 'px, ' +
+                (cx + cw) + 'px ' + (cy + ch - cr) + 'px, ' +
+                (cx + cw) + 'px ' + (cy + cr) + 'px, ' +
+                (cx + cw - cr) + 'px ' + cy + 'px, ' +
+                (cx + cr) + 'px ' + cy + 'px)';
+
+            // Position tooltip: prefer below, fall back to above
+            tooltip.style.left = '';
+            tooltip.style.top = '';
+            tooltip.style.right = '';
+            tooltip.style.bottom = '';
+            tooltip.style.transform = '';
+
+            var tipW = 320;
+            var tipLeft = Math.max(8, Math.min(r.left, window.innerWidth - tipW - 8));
+            tooltip.style.left = tipLeft + 'px';
+
+            var spaceBelow = window.innerHeight - r.bottom - pad;
+            if (spaceBelow > 160) {
+                tooltip.style.top = (r.bottom + pad + 12) + 'px';
+            } else {
+                // Place above the element
+                var tipAbove = r.top - pad - 12;
+                tooltip.style.top = '';
+                tooltip.style.bottom = (window.innerHeight - tipAbove) + 'px';
+            }
+        } else {
+            // No target element — center the tooltip
+            spotlight.style.display = 'none';
+            backdrop.style.clipPath = '';
+            tooltip.style.left = '50%';
+            tooltip.style.top = '50%';
+            tooltip.style.transform = 'translate(-50%, -50%)';
+        }
+    }, 80);
+}
 </script>
 
 <div class="speed-modal-overlay" id="speedModalOverlay" onclick="if(event.target===this)closeSpeedModal()">
@@ -1941,6 +2236,22 @@ function closeGallery() {
             <button onclick="closeGallery()" style="padding:4px 10px;">Close</button>
         </div>
         <div class="gallery-grid" id="galleryGrid"></div>
+    </div>
+</div>
+
+<!-- TUTORIAL OVERLAY -->
+<div class="tutorial-overlay" id="tutorialOverlay">
+    <div class="tutorial-backdrop" id="tutorialBackdrop"></div>
+    <div class="tutorial-spotlight" id="tutorialSpotlight"></div>
+    <div class="tutorial-tooltip" id="tutorialTooltip">
+        <h4 id="tutorialTitle"></h4>
+        <p id="tutorialText"></p>
+        <div class="tutorial-nav">
+            <span class="tutorial-step-count" id="tutorialStepCount"></span>
+            <button class="tutorial-back" id="tutorialBackBtn" onclick="tutorialNav(-1)">Back</button>
+            <button class="tutorial-next" id="tutorialNextBtn" onclick="tutorialNav(1)">Next</button>
+            <button class="tutorial-skip" onclick="endTutorial()">Skip</button>
+        </div>
     </div>
 </div>
 
