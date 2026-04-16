@@ -82,7 +82,7 @@ if ($type === 'onvif') {
     // Panasonic — grab frame from MJPEG stream via ffmpeg
     $mjpegUrl = "http://{$ip}/cgi-bin/mjpeg?resolution=1920x1080&framerate=5&quality=1";
     $cmd = sprintf(
-        'ffmpeg -f mjpeg -i %s -frames:v 1 -q:v 1 %s 2>&1',
+        'ffmpeg -y -timeout 10000000 -f mjpeg -i %s -frames:v 1 -q:v 1 %s 2>&1',
         escapeshellarg($mjpegUrl),
         escapeshellarg($absPath)
     );

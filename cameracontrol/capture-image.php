@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Camera MJPEG stream — use full-resolution feed for captures
+// Camera MJPEG stream — use high-quality feed for captures
 $mjpegUrl = 'http://localhost/mjpeg?resolution=1920x1080&framerate=5&quality=1';
 
 $captureDir = __DIR__ . '/captures';
@@ -29,11 +29,12 @@ $filename  = $timestamp . '.jpg';
 $absPath   = $captureDir . '/' . $filename;
 
 // Use ffmpeg to grab one frame from the MJPEG stream
+// -timeout 10000000: 10 second connection timeout (in microseconds)
 // -f mjpeg: force MJPEG input format
 // -frames:v 1: capture exactly one frame
 // -q:v 1: re-encode at best JPEG quality (1 = highest, range 1-31)
 $cmd = sprintf(
-    'ffmpeg -f mjpeg -i %s -frames:v 1 -q:v 1 %s 2>&1',
+    'ffmpeg -y -timeout 10000000 -f mjpeg -i %s -frames:v 1 -q:v 1 %s 2>&1',
     escapeshellarg($mjpegUrl),
     escapeshellarg($absPath)
 );
