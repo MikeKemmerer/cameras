@@ -15,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Camera MJPEG stream — use high-quality feed (feed 2) via local proxy
-$mjpegUrl = 'http://localhost/mjpeg?streamid=2';
+// Camera MJPEG stream — use full-resolution feed for captures
+$mjpegUrl = 'http://localhost/mjpeg?resolution=1920x1080&framerate=5&quality=1';
 
 $captureDir = __DIR__ . '/captures';
 if (!is_dir($captureDir)) {

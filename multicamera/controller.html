@@ -786,7 +786,7 @@ function initController() {
     refreshOnvifSnapshot();
     snapshotTimer = setInterval(refreshOnvifSnapshot, 500);
   } else {
-    document.getElementById("preview").src = `/multicamera/cam/${CAM_IP}/mjpeg`;
+    document.getElementById("preview").src = `/multicamera/cam/${CAM_IP}/mjpeg?resolution=640x360&framerate=15&quality=1`;
   }
 
   /* Hide Panasonic-specific controls for ONVIF */

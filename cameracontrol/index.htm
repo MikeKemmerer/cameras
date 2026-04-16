@@ -955,9 +955,11 @@
     .gallery-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-auto-rows: 140px;
         gap: 10px;
         overflow-y: auto;
         flex: 1;
+        min-height: 0;
     }
     .gallery-item {
         position: relative;
@@ -966,12 +968,15 @@
         border: 2px solid var(--card-border);
         cursor: pointer;
         transition: border-color 0.15s;
+        height: 100%;
     }
     .gallery-item:hover {
         border-color: var(--accent);
     }
     .gallery-item img {
         width: 100%;
+        height: 120px;
+        object-fit: cover;
         display: block;
     }
     .gallery-item .gallery-label {
@@ -1108,7 +1113,7 @@
 // Wake Lock removed
 
 
-const LIVE_URL = "/mjpeg?streamid=3";  // low-quality, high-framerate preview
+const LIVE_URL = "/mjpeg?resolution=640x360&framerate=15&quality=1";  // low-res, high-framerate preview
 const HLS_URL  = "/hls/2.m3u8";  // proxied HLS
 
 // ------------------------------------------------------------
