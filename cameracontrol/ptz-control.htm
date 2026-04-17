@@ -336,6 +336,91 @@
     @media (max-width: 1024px) and (orientation: landscape) {
         .preview-col { flex: 0 0 40%; }
     }
+
+    /* === TUTORIAL WALKTHROUGH === */
+    .tutorial-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9000;
+        pointer-events: none;
+    }
+    .tutorial-overlay.active { display: block; }
+    .tutorial-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        z-index: 9001;
+        pointer-events: auto;
+        transition: clip-path 0.3s ease;
+    }
+    .tutorial-tooltip {
+        position: fixed;
+        z-index: 9003;
+        background: var(--panel);
+        border: 2px solid var(--accent);
+        border-radius: 10px;
+        padding: 16px 18px;
+        max-width: 320px;
+        width: max-content;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        pointer-events: auto;
+        color: var(--fg);
+    }
+    .tutorial-tooltip h4 {
+        margin: 0 0 6px;
+        font-size: 14px;
+        color: var(--accent);
+    }
+    .tutorial-tooltip p {
+        margin: 0 0 12px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--fg);
+    }
+    .tutorial-nav {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .tutorial-nav button {
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .tutorial-next {
+        background: var(--accent);
+        color: #fff;
+    }
+    .tutorial-next:hover { opacity: 0.85; }
+    .tutorial-back {
+        background: #444;
+        color: #ccc;
+    }
+    .tutorial-back:hover { background: #555; }
+    .tutorial-skip {
+        margin-left: auto;
+        background: transparent;
+        color: #888;
+        text-decoration: underline;
+        padding: 6px 8px;
+    }
+    .tutorial-step-count {
+        font-size: 11px;
+        color: #888;
+        margin-right: auto;
+    }
+    .tutorial-spotlight {
+        position: fixed;
+        z-index: 9002;
+        border-radius: 6px;
+        box-shadow: 0 0 0 4px var(--accent), 0 0 16px rgba(63,169,245,0.3);
+        pointer-events: none;
+        transition: all 0.3s ease;
+    }
 </style>
 </head>
 <body>
@@ -727,6 +812,195 @@ function showToast(msg, isError) {
         toast.className = 'toast';
     }, 3000);
 }
+
+// ============================================================
+// INTERACTIVE TUTORIAL WALKTHROUGH (PTZ page)
+// ============================================================
+var tutorialStep = 0;
+var ptzTutorialSteps = [
+    {
+        title: 'PTZ Controls',
+        text: 'Welcome to the PTZ Control page. Here you can manually move the camera, adjust zoom and focus, and save new presets. Let\u2019s walk through each section.',
+        selector: '.preview-col'
+    },
+    {
+        title: 'Pan & Tilt Joystick',
+        text: 'Drag the joystick to pan and tilt the camera in real time. The further you drag from center, the faster the camera moves. Release to stop.',
+        selector: '#joystick',
+        setup: function() { scrollToCtrl(0); }
+    },
+    {
+        title: 'Zoom Control',
+        text: 'Drag the slider to zoom in (Tele) or out (Wide). The slider springs back to center when released, stopping the zoom.',
+        selector: '#zoomSlider',
+        setup: function() { scrollToCtrl(1); }
+    },
+    {
+        title: 'Focus Control',
+        text: 'Adjust focus manually with the slider, or use Auto Focus to let the camera handle it. One-Touch AF does a single focus adjustment.',
+        selector: '#focusSlider',
+        setup: function() { scrollToCtrl(2); }
+    },
+    {
+        title: 'Saving a Preset',
+        text: 'Once you\u2019ve positioned the camera, pick a preset number, give it a name, capture a thumbnail, and tap Save. The preset will be available on the main controller page.',
+        selector: '.save-section',
+        setup: function() { scrollToCtrl(3); }
+    },
+    {
+        title: 'Back to Main Controller',
+        text: 'That\u2019s it for PTZ controls! Tap "Finish" to return to the main page and complete the tutorial.',
+        selector: 'header a',
+        last: true
+    }
+];
+
+function scrollToCtrl(index) {
+    var sections = document.querySelectorAll('.ctrl-section');
+    if (sections[index]) sections[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function startPtzTutorial() {
+    tutorialStep = 0;
+    document.getElementById('tutorialOverlay').classList.add('active');
+    renderPtzTutorialStep();
+}
+
+function endPtzTutorial(goBack) {
+    document.getElementById('tutorialOverlay').classList.remove('active');
+    if (goBack) {
+        window.location.href = 'index.htm?tutorial=finish';
+    }
+}
+
+function ptzTutorialNav(dir) {
+    var next = tutorialStep + dir;
+    if (next < 0) return;
+    if (next >= ptzTutorialSteps.length) { endPtzTutorial(true); return; }
+    tutorialStep = next;
+    renderPtzTutorialStep();
+}
+
+function renderPtzTutorialStep() {
+    var step = ptzTutorialSteps[tutorialStep];
+    if (step.setup) step.setup();
+
+    requestAnimationFrame(function() { setTimeout(function() {
+        var el = document.querySelector(step.selector);
+        var backdrop = document.getElementById('tutorialBackdrop');
+        var spotlight = document.getElementById('tutorialSpotlight');
+        var tooltip = document.getElementById('tutorialTooltip');
+        var title = document.getElementById('tutorialTitle');
+        var text = document.getElementById('tutorialText');
+        var counter = document.getElementById('tutorialStepCount');
+        var backBtn = document.getElementById('tutorialBackBtn');
+        var nextBtn = document.getElementById('tutorialNextBtn');
+
+        title.textContent = step.title;
+        text.textContent = step.text;
+        counter.textContent = (tutorialStep + 1) + ' / ' + ptzTutorialSteps.length;
+        backBtn.style.display = tutorialStep === 0 ? 'none' : '';
+        nextBtn.textContent = step.last ? 'Finish' : 'Next';
+
+        if (el) {
+            var r = el.getBoundingClientRect();
+            if (r.width === 0 && r.height === 0 && !step._retried) {
+                step._retried = true;
+                setTimeout(function() { renderPtzTutorialStep(); }, 150);
+                return;
+            }
+            step._retried = false;
+            var pad = 6;
+
+            spotlight.style.display = 'block';
+            spotlight.style.left = (r.left - pad) + 'px';
+            spotlight.style.top = (r.top - pad) + 'px';
+            spotlight.style.width = (r.width + pad * 2) + 'px';
+            spotlight.style.height = (r.height + pad * 2) + 'px';
+
+            var cx = r.left - pad, cy = r.top - pad;
+            var cw = r.width + pad * 2, ch = r.height + pad * 2, cr = 6;
+            backdrop.style.clipPath =
+                'polygon(evenodd, ' +
+                '0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, ' +
+                (cx + cr) + 'px ' + cy + 'px, ' +
+                cx + 'px ' + (cy + cr) + 'px, ' +
+                cx + 'px ' + (cy + ch - cr) + 'px, ' +
+                (cx + cr) + 'px ' + (cy + ch) + 'px, ' +
+                (cx + cw - cr) + 'px ' + (cy + ch) + 'px, ' +
+                (cx + cw) + 'px ' + (cy + ch - cr) + 'px, ' +
+                (cx + cw) + 'px ' + (cy + cr) + 'px, ' +
+                (cx + cw - cr) + 'px ' + cy + 'px, ' +
+                (cx + cr) + 'px ' + cy + 'px)';
+
+            tooltip.style.left = '';
+            tooltip.style.top = '';
+            tooltip.style.right = '';
+            tooltip.style.bottom = '';
+            tooltip.style.transform = '';
+
+            var tipW = 320;
+            var tipLeft = Math.max(8, Math.min(r.left, window.innerWidth - tipW - 8));
+            tooltip.style.left = tipLeft + 'px';
+
+            var spaceBelow = window.innerHeight - r.bottom - pad;
+            var spaceAbove = r.top - pad;
+            if (spaceBelow > 160) {
+                tooltip.style.top = (r.bottom + pad + 12) + 'px';
+            } else if (spaceAbove > 160) {
+                tooltip.style.top = '';
+                tooltip.style.bottom = (window.innerHeight - r.top + pad + 12) + 'px';
+            } else {
+                var midY = r.top + r.height / 2;
+                tooltip.style.top = Math.max(8, Math.min(midY - 80, window.innerHeight - 200)) + 'px';
+            }
+
+            var tipRect = tooltip.getBoundingClientRect();
+            if (tipRect.top < 8) {
+                tooltip.style.top = '8px';
+                tooltip.style.bottom = '';
+            } else if (tipRect.bottom > window.innerHeight - 8) {
+                tooltip.style.top = '';
+                tooltip.style.bottom = '8px';
+            }
+        } else {
+            spotlight.style.display = 'none';
+            backdrop.style.clipPath = '';
+            tooltip.style.left = '50%';
+            tooltip.style.top = '50%';
+            tooltip.style.transform = 'translate(-50%, -50%)';
+        }
+    }, 50); });
+}
+
+// Auto-start if arriving from main page tutorial
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('tutorial') === '1') {
+        history.replaceState(null, '', window.location.pathname);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', startPtzTutorial);
+        } else {
+            startPtzTutorial();
+        }
+    }
+})();
 </script>
+
+<div class="tutorial-overlay" id="tutorialOverlay">
+    <div class="tutorial-backdrop" id="tutorialBackdrop"></div>
+    <div class="tutorial-spotlight" id="tutorialSpotlight"></div>
+    <div class="tutorial-tooltip" id="tutorialTooltip">
+        <h4 id="tutorialTitle"></h4>
+        <p id="tutorialText"></p>
+        <div class="tutorial-nav">
+            <span class="tutorial-step-count" id="tutorialStepCount"></span>
+            <button class="tutorial-back" id="tutorialBackBtn" onclick="ptzTutorialNav(-1)">Back</button>
+            <button class="tutorial-next" id="tutorialNextBtn" onclick="ptzTutorialNav(1)">Next</button>
+            <button class="tutorial-skip" onclick="endPtzTutorial(false)">Skip</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

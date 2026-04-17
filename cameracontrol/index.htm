@@ -2058,8 +2058,9 @@ var tutorialSteps = [
     },
     {
         title: 'Running a Sequence',
-        text: 'Tap a sequence card to start it. The camera will move through each step automatically with timed dwell periods. Try "Great Entrance" for Sunday services.',
+        text: 'Tap a sequence card to start it. The camera will move through each step automatically with timed dwell periods. Try "Great Entrance" for Sunday services. This page also has Semi Auto with manual advancing and Boomerang modes for more control. NOTE: This page must remain open for the sequence to run.',
         selector: '#seqGrid',
+        tipOver: '.preview',
         setup: function() {
             closeSettingsDropdown();
             switchTab('sequences');
@@ -2082,9 +2083,10 @@ var tutorialSteps = [
     },
     {
         title: 'PTZ Control & Presets',
-        text: 'For manual camera movement (pan, tilt, zoom) or adding/editing presets, open PTZ Control from the Settings menu. It provides full directional controls and preset save functionality.',
+        text: 'For manual camera movement, zoom, and adding presets, you can continue the tutorial on the PTZ page. Tap "Open PTZ Tutorial" below, or tap Next to skip and finish here.',
         selector: '#settingsDropdown a[href="ptz-control.htm"]',
-        setup: function() { openSettingsDropdown(); }
+        setup: function() { openSettingsDropdown(); },
+        ptzLink: true
     },
     {
         title: 'You\u2019re All Set!',
@@ -2132,8 +2134,8 @@ function renderTutorialStep() {
     var step = tutorialSteps[tutorialStep];
     if (step.setup) step.setup();
 
-    // Brief delay to let DOM settle (e.g., settings dropdown opening)
-    setTimeout(function() {
+    // Delay to let DOM settle (settings dropdown needs a repaint cycle)
+    requestAnimationFrame(function() { setTimeout(function() {
         var el = document.querySelector(step.selector);
         var overlay = document.getElementById('tutorialOverlay');
         var backdrop = document.getElementById('tutorialBackdrop');
@@ -2151,8 +2153,28 @@ function renderTutorialStep() {
         backBtn.style.display = tutorialStep === 0 ? 'none' : '';
         nextBtn.textContent = step.last ? 'Done' : 'Next';
 
+        // Add or remove PTZ link button
+        var existingPtzBtn = document.getElementById('tutorialPtzBtn');
+        if (existingPtzBtn) existingPtzBtn.remove();
+        if (step.ptzLink) {
+            var ptzBtn = document.createElement('a');
+            ptzBtn.id = 'tutorialPtzBtn';
+            ptzBtn.href = 'ptz-control.htm?tutorial=1';
+            ptzBtn.textContent = '\uD83C\uDFA5 Open PTZ Tutorial';
+            ptzBtn.style.cssText = 'display:inline-block;margin-top:8px;padding:8px 16px;background:var(--accent,#3fa9f5);color:#fff;border-radius:5px;text-decoration:none;font-size:12px;font-weight:600;text-align:center;';
+            text.parentNode.insertBefore(ptzBtn, text.nextSibling);
+        }
+
         if (el) {
             var r = el.getBoundingClientRect();
+
+            // If the element has zero size (e.g., dropdown not yet painted), retry once
+            if (r.width === 0 && r.height === 0 && !step._retried) {
+                step._retried = true;
+                setTimeout(function() { renderTutorialStep(); }, 150);
+                return;
+            }
+            step._retried = false;
             var pad = 6;
 
             // Position spotlight
@@ -2181,7 +2203,11 @@ function renderTutorialStep() {
                 (cx + cw - cr) + 'px ' + cy + 'px, ' +
                 (cx + cr) + 'px ' + cy + 'px)';
 
-            // Position tooltip: prefer below, fall back to above
+            // Position tooltip: prefer below, fall back to above, clamp to viewport
+            // If step has tipOver, position tooltip over that element instead
+            var tipRef = step.tipOver ? document.querySelector(step.tipOver) : null;
+            var tr = tipRef ? tipRef.getBoundingClientRect() : r;
+
             tooltip.style.left = '';
             tooltip.style.top = '';
             tooltip.style.right = '';
@@ -2189,17 +2215,33 @@ function renderTutorialStep() {
             tooltip.style.transform = '';
 
             var tipW = 320;
-            var tipLeft = Math.max(8, Math.min(r.left, window.innerWidth - tipW - 8));
+            var tipLeft = Math.max(8, Math.min(tr.left, window.innerWidth - tipW - 8));
             tooltip.style.left = tipLeft + 'px';
 
-            var spaceBelow = window.innerHeight - r.bottom - pad;
+            var spaceBelow = window.innerHeight - tr.bottom - pad;
+            var spaceAbove = tr.top - pad;
             if (spaceBelow > 160) {
-                tooltip.style.top = (r.bottom + pad + 12) + 'px';
-            } else {
+                tooltip.style.top = (tr.bottom + pad + 12) + 'px';
+            } else if (spaceAbove > 160) {
                 // Place above the element
-                var tipAbove = r.top - pad - 12;
+                var tipAbove = tr.top - pad - 12;
                 tooltip.style.top = '';
                 tooltip.style.bottom = (window.innerHeight - tipAbove) + 'px';
+            } else {
+                // Neither side has enough room — overlay on the element, clamped to viewport
+                var midY = tr.top + tr.height / 2;
+                var tipTop = Math.max(8, Math.min(midY - 80, window.innerHeight - 200));
+                tooltip.style.top = tipTop + 'px';
+            }
+
+            // Final clamp: ensure tooltip doesn't overflow top or bottom of viewport
+            var tipRect = tooltip.getBoundingClientRect();
+            if (tipRect.top < 8) {
+                tooltip.style.top = '8px';
+                tooltip.style.bottom = '';
+            } else if (tipRect.bottom > window.innerHeight - 8) {
+                tooltip.style.top = '';
+                tooltip.style.bottom = '8px';
             }
         } else {
             // No target element — center the tooltip
@@ -2209,8 +2251,26 @@ function renderTutorialStep() {
             tooltip.style.top = '50%';
             tooltip.style.transform = 'translate(-50%, -50%)';
         }
-    }, 80);
+    }, 50); });
 }
+
+// Auto-resume tutorial at final step if returning from PTZ tutorial
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('tutorial') === 'finish') {
+        history.replaceState(null, '', window.location.pathname);
+        function resumeTutorial() {
+            tutorialStep = tutorialSteps.length - 1;
+            document.getElementById('tutorialOverlay').classList.add('active');
+            renderTutorialStep();
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', resumeTutorial);
+        } else {
+            resumeTutorial();
+        }
+    }
+})();
 </script>
 
 <div class="speed-modal-overlay" id="speedModalOverlay" onclick="if(event.target===this)closeSpeedModal()">
