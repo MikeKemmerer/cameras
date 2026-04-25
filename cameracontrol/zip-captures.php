@@ -6,6 +6,14 @@
  * Only serves files from the captures/ directory. Rejects path traversal.
  */
 
+// Check ZipArchive availability early
+if (!class_exists('ZipArchive')) {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'ZipArchive not available. Install php-zip: sudo apt install php-zip']);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Content-Type: application/json');

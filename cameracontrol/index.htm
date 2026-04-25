@@ -2173,7 +2173,13 @@ function downloadSelected() {
         body: JSON.stringify({ files: files })
     })
     .then(function(r) {
-        if (!r.ok) throw new Error('Server error');
+        if (!r.ok) {
+            return r.text().then(function(body) {
+                var msg = 'Server error ' + r.status;
+                try { msg = JSON.parse(body).error || msg; } catch(e) {}
+                throw new Error(msg);
+            });
+        }
         return r.blob();
     })
     .then(function(blob) {
