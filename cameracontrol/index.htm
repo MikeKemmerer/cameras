@@ -1017,6 +1017,42 @@
         color: var(--meta-fg);
         font-size: 14px;
     }
+    .gallery-item.selected {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px var(--accent);
+    }
+    .gallery-item .gallery-check {
+        display: none;
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 22px;
+        height: 22px;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 50%;
+        font-size: 14px;
+        line-height: 22px;
+        text-align: center;
+        z-index: 2;
+        pointer-events: none;
+    }
+    .gallery-item.selected .gallery-check { display: block; }
+    .gallery-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+        gap: 8px;
+    }
+    .gallery-footer .gallery-sel-count {
+        font-size: 12px;
+        color: var(--meta-fg);
+    }
+    .gallery-footer button {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
 
     /* === TUTORIAL WALKTHROUGH === */
     .tutorial-overlay {
@@ -2025,7 +2061,19 @@ function showGallery() {
             captures.forEach(function(c) {
                 var item = document.createElement('div');
                 item.className = 'gallery-item';
-                item.onclick = function() { window.open(c.path); };
+                item.dataset.filename = c.filename;
+                item.onclick = function() {
+                    if (gallerySelectMode) {
+                        item.classList.toggle('selected');
+                        updateGallerySelCount();
+                    } else {
+                        window.open(c.path);
+                    }
+                };
+
+                var check = document.createElement('span');
+                check.className = 'gallery-check';
+                check.textContent = '\u2713';
 
                 var img = document.createElement('img');
                 img.src = c.path;
@@ -2035,6 +2083,7 @@ function showGallery() {
                 label.className = 'gallery-label';
                 label.textContent = c.filename.replace('.jpg', '');
 
+                item.appendChild(check);
                 item.appendChild(img);
                 item.appendChild(label);
                 grid.appendChild(item);
@@ -2047,6 +2096,75 @@ function showGallery() {
 
 function closeGallery() {
     document.getElementById('galleryOverlay').classList.remove('open');
+    gallerySelectMode = false;
+    updateGallerySelectUI();
+}
+
+var gallerySelectMode = false;
+
+function toggleGallerySelect() {
+    gallerySelectMode = !gallerySelectMode;
+    updateGallerySelectUI();
+    if (!gallerySelectMode) {
+        document.querySelectorAll('.gallery-item.selected').forEach(function(el) {
+            el.classList.remove('selected');
+        });
+    }
+    updateGallerySelCount();
+}
+
+function updateGallerySelectUI() {
+    var btn = document.getElementById('gallerySelectBtn');
+    var footer = document.getElementById('galleryFooter');
+    if (gallerySelectMode) {
+        btn.textContent = 'Cancel';
+        footer.style.display = 'flex';
+    } else {
+        btn.textContent = 'Select';
+        footer.style.display = 'none';
+    }
+}
+
+function updateGallerySelCount() {
+    var count = document.querySelectorAll('.gallery-item.selected').length;
+    document.getElementById('gallerySelCount').textContent = count + ' selected';
+    document.getElementById('galleryDownloadBtn').disabled = count === 0;
+}
+
+function downloadSelected() {
+    var items = document.querySelectorAll('.gallery-item.selected');
+    var files = [];
+    items.forEach(function(el) { files.push(el.dataset.filename); });
+    if (files.length === 0) return;
+
+    var btn = document.getElementById('galleryDownloadBtn');
+    btn.disabled = true;
+    btn.textContent = '\u23F3 Zipping...';
+
+    fetch('zip-captures.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: files })
+    })
+    .then(function(r) {
+        if (!r.ok) throw new Error('Server error');
+        return r.blob();
+    })
+    .then(function(blob) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'captures_' + new Date().toISOString().slice(0,19).replace(/[T:]/g, '-') + '.zip';
+        a.click();
+        URL.revokeObjectURL(url);
+        btn.textContent = '\u2713 Done!';
+        setTimeout(function() { btn.innerHTML = '&#128229; Download Zip'; btn.disabled = false; }, 2000);
+    })
+    .catch(function(err) {
+        alert('Download failed: ' + err);
+        btn.innerHTML = '&#128229; Download Zip';
+        btn.disabled = false;
+    });
 }
 
 // ============================================================
@@ -2338,9 +2456,16 @@ function renderTutorialStep() {
     <div class="gallery-modal">
         <div class="gallery-header">
             <h3>&#128444; Captures</h3>
-            <button onclick="closeGallery()" style="padding:4px 10px;">Close</button>
+            <div style="display:flex; gap:6px;">
+                <button id="gallerySelectBtn" onclick="toggleGallerySelect()" style="padding:4px 10px;">Select</button>
+                <button onclick="closeGallery()" style="padding:4px 10px;">Close</button>
+            </div>
         </div>
         <div class="gallery-grid" id="galleryGrid"></div>
+        <div class="gallery-footer" id="galleryFooter" style="display:none;">
+            <span class="gallery-sel-count" id="gallerySelCount">0 selected</span>
+            <button id="galleryDownloadBtn" onclick="downloadSelected()" disabled>&#128229; Download Zip</button>
+        </div>
     </div>
 </div>
 
