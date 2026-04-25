@@ -2139,6 +2139,19 @@ function downloadSelected() {
 
     var btn = document.getElementById('galleryDownloadBtn');
     btn.disabled = true;
+
+    // Single file — download directly without zipping
+    if (files.length === 1) {
+        btn.textContent = '\u23F3 Downloading...';
+        var a = document.createElement('a');
+        a.href = 'captures/' + files[0];
+        a.download = files[0];
+        a.click();
+        btn.textContent = '\u2713 Done!';
+        setTimeout(function() { btn.innerHTML = '&#128229; Download'; btn.disabled = false; }, 2000);
+        return;
+    }
+
     btn.textContent = '\u23F3 Zipping...';
 
     fetch('zip-captures.php', {
@@ -2158,11 +2171,11 @@ function downloadSelected() {
         a.click();
         URL.revokeObjectURL(url);
         btn.textContent = '\u2713 Done!';
-        setTimeout(function() { btn.innerHTML = '&#128229; Download Zip'; btn.disabled = false; }, 2000);
+        setTimeout(function() { btn.innerHTML = '&#128229; Download'; btn.disabled = false; }, 2000);
     })
     .catch(function(err) {
         alert('Download failed: ' + err);
-        btn.innerHTML = '&#128229; Download Zip';
+        btn.innerHTML = '&#128229; Download';
         btn.disabled = false;
     });
 }
@@ -2464,7 +2477,7 @@ function renderTutorialStep() {
         <div class="gallery-grid" id="galleryGrid"></div>
         <div class="gallery-footer" id="galleryFooter" style="display:none;">
             <span class="gallery-sel-count" id="gallerySelCount">0 selected</span>
-            <button id="galleryDownloadBtn" onclick="downloadSelected()" disabled>&#128229; Download Zip</button>
+            <button id="galleryDownloadBtn" onclick="downloadSelected()" disabled>&#128229; Download</button>
         </div>
     </div>
 </div>
