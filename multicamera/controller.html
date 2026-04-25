@@ -408,7 +408,10 @@ body {
   font-size: 10px;
   background: #222;
   color: #888;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
+.seq-step-pip:hover { opacity: 0.8; }
 .seq-step-pip.active { background: var(--accent); color: #000; font-weight: 600; }
 .seq-step-pip.done { background: #1a3d1a; color: #6fcf6f; }
 .seq-countdown { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 4px; min-height: 1.2em; }
@@ -423,6 +426,18 @@ body {
   color: #6fcf6f;
 }
 .seq-next-btn:hover { background: #247a38; }
+.seq-advance-btn {
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #000;
+  border-radius: 4px;
+  cursor: pointer;
+  background: #1a3a5a;
+  color: #6fb5f5;
+  margin-left: 6px;
+}
+.seq-advance-btn:hover { background: #245a8a; }
 .seq-grid { display: flex; flex-direction: column; gap: 8px; }
 .seq-card {
   background: var(--panel);
@@ -1256,6 +1271,7 @@ function runSequence(seq, mode) {
   }
 
   switchTab('seq');
+  document.getElementById('seqPanel').scrollTop = 0;
   executeStep();
 }
 
@@ -1271,12 +1287,14 @@ function executeStep() {
     const delay = (step.delay || 5) * 1000;
     startCountdown(step.delay || 5);
     activeSeq.timer = setTimeout(function() { advanceStep(); }, delay);
+    showAdvanceButton();
   } else if (activeSeq.mode === 'semi') {
     showNextButton();
   } else if (activeSeq.mode === 'boomerang') {
     const delay = (step.delay || 5) * 1000;
     startCountdown(step.delay || 5);
     activeSeq.timer = setTimeout(function() { advanceBoomerang(); }, delay);
+    showAdvanceButton();
   }
 }
 
@@ -1357,6 +1375,7 @@ function updateSeqStatus() {
     if (i === activeSeq.stepIdx) pip.classList.add('active');
     else if (i < activeSeq.stepIdx) pip.classList.add('done');
     pip.textContent = s.label || ('P' + s.preset);
+    pip.onclick = function() { jumpToStep(i); };
     pips.appendChild(pip);
   });
 }
@@ -1391,6 +1410,30 @@ function advanceSemiStep() {
     return;
   }
   executeStep();
+}
+
+function jumpToStep(idx) {
+  if (!activeSeq) return;
+  if (activeSeq.timer) clearTimeout(activeSeq.timer);
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  activeSeq.stepIdx = idx;
+  executeStep();
+}
+
+function showAdvanceButton() {
+  document.getElementById('seqNextArea').innerHTML =
+    '<button class="seq-advance-btn" onclick="manualAdvance()">Skip &#9654;</button>';
+}
+
+function manualAdvance() {
+  if (!activeSeq) return;
+  if (activeSeq.timer) clearTimeout(activeSeq.timer);
+  if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+  if (activeSeq.mode === 'boomerang') {
+    advanceBoomerang();
+  } else {
+    advanceStep();
+  }
 }
 
 /* ===== SPEED MODAL ===== */

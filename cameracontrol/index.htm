@@ -383,8 +383,11 @@
         font-size: 12px;
         background: var(--pip-bg);
         color: var(--pip-fg);
-        transition: background 0.2s, color 0.2s;
+        cursor: pointer;
+        transition: background 0.2s, color 0.2s, opacity 0.15s;
     }
+
+    .seq-step-pip:hover { opacity: 0.8; }
 
     .seq-step-pip.active {
         background: var(--accent);
@@ -433,6 +436,24 @@
 
     body.dark .seq-next-btn:hover {
         box-shadow: 0 0 10px #28a745, 0 0 6px #28a745 inset, 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    .seq-advance-btn {
+        padding: 8px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #1a3a5a;
+        color: #6fb5f5;
+        margin-left: 8px;
+        transition: background 0.15s;
+    }
+    .seq-advance-btn:hover { background: #245a8a; }
+    body.dark .seq-advance-btn {
+        border: 1px solid #000;
+        box-shadow: 0 0 0 1px #1a3a5a, 0 2px 4px rgba(0,0,0,0.6);
     }
 
     .seq-grid {
@@ -1532,6 +1553,7 @@ function launchSequence(seq, mode, steps) {
         loopToggle.classList.remove('visible');
     }
     showStatus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     executeStep();
 }
 
@@ -1575,6 +1597,8 @@ function executeStep() {
         if (!activeSequence) return;
         advanceStep();
     }, delay);
+
+    showAdvanceButton();
 }
 
 function advanceStep() {
@@ -1640,6 +1664,26 @@ function semiNext() {
     executeStep();
 }
 
+function jumpToStep(idx) {
+    if (!activeSequence) return;
+    if (activeSequence.timer) clearTimeout(activeSequence.timer);
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    activeSequence.stepIndex = idx;
+    executeStep();
+}
+
+function showAdvanceButton() {
+    document.getElementById('seqNextArea').innerHTML =
+        '<button class="seq-advance-btn" onclick="manualAdvance()">Skip &#9654;</button>';
+}
+
+function manualAdvance() {
+    if (!activeSequence) return;
+    if (activeSequence.timer) clearTimeout(activeSequence.timer);
+    if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+    advanceStep();
+}
+
 function stopSequence() {
     if (activeSequence && activeSequence.timer) {
         clearTimeout(activeSequence.timer);
@@ -1683,6 +1727,7 @@ function updateStatus() {
         pip.textContent = 'P' + step.preset;
         if (i < activeSequence.stepIndex) pip.classList.add('done');
         if (i === activeSequence.stepIndex) pip.classList.add('active');
+        pip.onclick = function() { jumpToStep(i); };
         progress.appendChild(pip);
     });
 }
