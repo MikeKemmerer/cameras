@@ -2062,9 +2062,20 @@ function showGallery() {
                 var item = document.createElement('div');
                 item.className = 'gallery-item';
                 item.dataset.filename = c.filename;
-                item.onclick = function() {
+                item.onclick = function(e) {
                     if (gallerySelectMode) {
-                        item.classList.toggle('selected');
+                        var allItems = Array.from(document.querySelectorAll('.gallery-item'));
+                        var idx = allItems.indexOf(item);
+                        if (e.shiftKey && lastSelectedIndex >= 0) {
+                            var lo = Math.min(lastSelectedIndex, idx);
+                            var hi = Math.max(lastSelectedIndex, idx);
+                            for (var j = lo; j <= hi; j++) {
+                                allItems[j].classList.add('selected');
+                            }
+                        } else {
+                            item.classList.toggle('selected');
+                        }
+                        lastSelectedIndex = idx;
                         updateGallerySelCount();
                     } else {
                         window.open(c.path);
@@ -2101,6 +2112,7 @@ function closeGallery() {
 }
 
 var gallerySelectMode = false;
+var lastSelectedIndex = -1;
 
 function toggleGallerySelect() {
     gallerySelectMode = !gallerySelectMode;
@@ -2109,6 +2121,7 @@ function toggleGallerySelect() {
         document.querySelectorAll('.gallery-item.selected').forEach(function(el) {
             el.classList.remove('selected');
         });
+        lastSelectedIndex = -1;
     }
     updateGallerySelCount();
 }
