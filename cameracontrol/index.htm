@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>PTZ Preset Controller</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
 <!-- HLS.js for browsers that need it -->
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
@@ -589,15 +589,24 @@
             display: grid;
             grid-template-columns: 45% 1fr;
             grid-template-rows: auto 1fr;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
         header {
             grid-column: 1;
             grid-row: 1;
-            padding: 6px 12px;
+            padding: 4px 8px;
             border-bottom: 2px solid var(--accent);
         }
         header .header-left {
             display: none;
+        }
+        .header-right {
+            gap: 4px;
+        }
+        .header-right button {
+            padding: 4px 6px;
+            font-size: 11px;
         }
         .layout {
             display: contents;
