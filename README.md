@@ -14,6 +14,34 @@ Browser-based PTZ camera control console for Panasonic AW-series cameras, with m
 
 ## Setup
 
+### Prerequisites
+
+**System packages:**
+
+```bash
+sudo apt install apache2 php php-zip php-curl php-xml ffmpeg
+```
+
+| Package | Required By | Purpose |
+|---------|-------------|---------|
+| `apache2` | All | Web server with reverse proxy |
+| `php` | All PHP endpoints | Server-side scripting (includes `php-json` and `php-fileinfo`) |
+| `php-zip` | `cameracontrol/zip-captures.php` | ZipArchive for multi-image download |
+| `php-curl` | `multicamera/onvif-proxy.php`, `multicamera/capture-image.php` | HTTP requests to ONVIF cameras |
+| `php-xml` | `multicamera/onvif-proxy.php` | Parsing ONVIF SOAP responses |
+| `ffmpeg` | `cameracontrol/capture-image.php`, `multicamera/capture-image.php` | Extracting JPEG frames from MJPEG streams |
+
+**Apache modules:**
+
+```bash
+sudo a2enmod proxy proxy_http rewrite
+sudo systemctl restart apache2
+```
+
+**External JS (loaded via CDN, no install needed):**
+
+- [HLS.js](https://cdn.jsdelivr.net/npm/hls.js@latest) — HLS video playback
+
 ### 1. Camera IP Configuration
 
 Copy the example config and fill in your camera IPs:
