@@ -1271,7 +1271,7 @@ const HLS_URL  = "/hls/2.m3u8";  // proxied HLS
 // ------------------------------------------------------------
 // LOAD PRESETS & BUILD GRID
 // ------------------------------------------------------------
-fetch('presets.json')
+fetch('presets.json', { cache: 'no-store' })
     .then(r => r.json())
     .then(presets => {
         const grid = document.getElementById("presetGrid");

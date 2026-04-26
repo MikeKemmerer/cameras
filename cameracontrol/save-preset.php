@@ -109,10 +109,13 @@ if ($existingIdx !== null && !$overwrite) {
     exit;
 }
 
-// Add cache-busting parameter when thumbnail was replaced
+// Add cache-busting parameter when thumbnail was replaced;
+// preserve any existing version string when only the label is being updated.
 $imagePathForJson = $imagePath;
 if ($thumbnailSaved) {
     $imagePathForJson = $imagePath . '?v=' . time();
+} elseif ($existingIdx !== null && isset($presets[$existingIdx]['image'])) {
+    $imagePathForJson = $presets[$existingIdx]['image'];
 }
 
 if ($existingIdx !== null) {
