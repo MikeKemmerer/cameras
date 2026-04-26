@@ -43,6 +43,7 @@ $imagePath  = 'images/preset' . $number . '.jpg';
 $absImage   = $imagesDir . '/preset' . $number . '.jpg';
 
 // Save uploaded thumbnail if present
+$thumbnailSaved = false;
 if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK) {
     $tmpPath = $_FILES['thumbnail']['tmp_name'];
 
@@ -73,6 +74,7 @@ if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_
         echo json_encode(['ok' => false, 'error' => 'Failed to save thumbnail']);
         exit;
     }
+    $thumbnailSaved = true;
 } else {
     // No thumbnail uploaded — use existing or fallback
     if (!file_exists($absImage)) {
@@ -107,18 +109,27 @@ if ($existingIdx !== null && !$overwrite) {
     exit;
 }
 
+// Add cache-busting parameter when thumbnail was replaced;
+// preserve any existing version string when only the label is being updated.
+$imagePathForJson = $imagePath;
+if ($thumbnailSaved) {
+    $imagePathForJson = $imagePath . '?v=' . time();
+} elseif ($existingIdx !== null && isset($presets[$existingIdx]['image'])) {
+    $imagePathForJson = $presets[$existingIdx]['image'];
+}
+
 if ($existingIdx !== null) {
     // Overwrite existing entry
     $presets[$existingIdx] = [
         'number' => $number,
         'label'  => $label,
-        'image'  => $imagePath,
+        'image'  => $imagePathForJson,
     ];
 } else {
     $presets[] = [
         'number' => $number,
         'label'  => $label,
-        'image'  => $imagePath,
+        'image'  => $imagePathForJson,
     ];
 }
 
@@ -135,4 +146,4 @@ if (file_put_contents($presetsFile, $json) === false) {
     exit;
 }
 
-echo json_encode(['ok' => true, 'preset' => $number, 'label' => $label, 'image' => $imagePath]);
+echo json_encode(['ok' => true, 'preset' => $number, 'label' => $label, 'image' => $imagePathForJson]);
