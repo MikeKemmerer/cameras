@@ -740,6 +740,13 @@ const params = new URLSearchParams(window.location.search);
 const cam = Number(params.get("cam"));
 const ipParam = params.get("ip");
 
+/* Shared HTML escaping helper */
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
 /* Camera mapping — loaded from config */
 let CAMERAS = {};
 let CAM_TYPE = 'panasonic';
@@ -1208,7 +1215,7 @@ function parseCamData(text) {
     if (idx < 0) continue;
     const key = line.substring(0, idx).trim();
     const val = line.substring(idx + 1).trim();
-    html += `<tr><td>${key}</td><td>${val}</td></tr>`;
+    html += `<tr><td>${escapeHtml(key)}</td><td>${escapeHtml(val)}</td></tr>`;
   }
   html += '</table>';
   return html;
@@ -1228,15 +1235,15 @@ function renderSequences() {
   }
   sequences.forEach((seq, i) => {
     const totalDelay = seq.steps.reduce((sum, s) => sum + (s.delay || 0), 0);
-    const stepLabels = seq.steps.map(s => s.label || ('P' + s.preset)).join(' \u2192 ');
+    const stepLabels = seq.steps.map(s => escapeHtml(s.label || ('P' + s.preset))).join(' \u2192 ');
     const speedMatch = speedSteps.find(s => s.value === String(seq.speed));
 
     const card = document.createElement('div');
     card.className = 'seq-card';
     card.innerHTML =
-      '<div class="seq-card-name">' + seq.name + '</div>' +
+      '<div class="seq-card-name">' + escapeHtml(seq.name) + '</div>' +
       '<div class="seq-card-meta">' + seq.steps.length + ' steps \u00b7 ~' + totalDelay + 's total</div>' +
-      (speedMatch ? '<span class="seq-speed-badge">' + speedMatch.label + '</span>' : '') +
+      (speedMatch ? '<span class="seq-speed-badge">' + escapeHtml(speedMatch.label) + '</span>' : '') +
       '<div class="seq-card-steps">' + stepLabels + '</div>' +
       '<div class="seq-mode-btns">' +
         '<button class="seq-mode-btn" onclick="startSequence(' + i + ',\'auto\')">&#9654; Auto</button>' +

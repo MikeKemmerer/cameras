@@ -11,6 +11,8 @@
  * adds/updates the entry in presets.json.
  */
 
+const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024; // 5 MB
+
 header('Content-Type: application/json');
 
 // Only POST allowed
@@ -43,6 +45,13 @@ $absImage   = $imagesDir . '/preset' . $number . '.jpg';
 // Save uploaded thumbnail if present
 if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK) {
     $tmpPath = $_FILES['thumbnail']['tmp_name'];
+
+    // Reject files larger than the configured limit
+    if ($_FILES['thumbnail']['size'] > MAX_THUMBNAIL_BYTES) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Thumbnail must be smaller than 5 MB']);
+        exit;
+    }
 
     // Verify it's actually a JPEG image
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
