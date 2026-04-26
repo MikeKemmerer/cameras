@@ -106,6 +106,7 @@ switch ($action) {
 function wsseHeader($user, $pass) {
     $nonce    = random_bytes(16);
     $created  = gmdate('Y-m-d\TH:i:s\Z');
+    // $pass is hashed — only the base64-encoded digest goes into XML, never the raw password.
     $digest   = base64_encode(sha1($nonce . $created . $pass, true));
     $nonceB64 = base64_encode($nonce);
     $userXml  = htmlspecialchars($user, ENT_XML1 | ENT_QUOTES);
