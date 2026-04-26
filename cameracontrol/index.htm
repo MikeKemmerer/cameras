@@ -212,7 +212,6 @@
         display: flex;
         gap: 0;
         background: var(--tab-bg);
-        border-bottom: 2px solid var(--accent);
         align-items: center;
         flex-shrink: 0;
     }
@@ -279,7 +278,6 @@
         background: var(--tab-bg);
         color: var(--tab-fg);
         cursor: pointer;
-        border-bottom: 3px solid transparent;
         transition: background 0.15s, color 0.15s;
     }
 
@@ -290,7 +288,6 @@
     .tab-btn.active {
         background: var(--tab-active-bg);
         color: var(--accent);
-        border-bottom-color: var(--accent);
     }
 
     .tab-panel {
@@ -602,11 +599,13 @@
             display: none;
         }
         .header-right {
+            flex-wrap: nowrap;
             gap: 4px;
         }
         .header-right button {
             padding: 4px 6px;
             font-size: 11px;
+            white-space: nowrap;
         }
         .layout {
             display: contents;
