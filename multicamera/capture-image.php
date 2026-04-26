@@ -77,7 +77,14 @@ if ($type === 'onvif') {
         exit;
     }
 
-    file_put_contents($absPath, $data);
+    if (file_put_contents($absPath, $data) === false) {
+        http_response_code(500);
+        echo json_encode([
+            'ok'    => false,
+            'error' => 'Failed to save snapshot to disk',
+        ]);
+        exit;
+    }
 } else {
     // Panasonic — grab frame from MJPEG stream via ffmpeg
     $mjpegUrl = "http://{$ip}/cgi-bin/mjpeg?resolution=1920x1080&framerate=5&quality=1";

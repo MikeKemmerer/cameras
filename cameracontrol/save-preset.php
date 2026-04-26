@@ -44,6 +44,13 @@ $absImage   = $imagesDir . '/preset' . $number . '.jpg';
 if (isset($_FILES['thumbnail']) && $_FILES['thumbnail']['error'] === UPLOAD_ERR_OK) {
     $tmpPath = $_FILES['thumbnail']['tmp_name'];
 
+    // Reject files larger than 5 MB
+    if ($_FILES['thumbnail']['size'] > 5 * 1024 * 1024) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Thumbnail must be smaller than 5 MB']);
+        exit;
+    }
+
     // Verify it's actually a JPEG image
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime  = finfo_file($finfo, $tmpPath);

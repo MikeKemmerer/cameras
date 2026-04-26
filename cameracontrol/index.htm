@@ -1154,7 +1154,7 @@
     <div class="header-left">
         <h2>Camera Presets</h2>
     </div>
-    <div class="header-right">        <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop Sequence</button>        <button onclick="captureStill()">&#128247; Capture</button>
+    <div class="header-right">        <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop Sequence</button>        <button onclick="captureStill(this)">&#128247; Capture</button>
         <button onclick="showGallery()">&#128444; Gallery</button>
         <button onclick="switchToMJPEG()">MJPEG</button>
         <button onclick="switchToHLS()">HLS w/ &#128265;</button>
@@ -1215,7 +1215,7 @@
                         </div>
                     </div>
                     <div class="settings-divider"></div>
-                    <button class="settings-action-btn" onclick="autoAdjustImage()">&#9881; Auto Adjust Image</button>
+                    <button class="settings-action-btn" onclick="autoAdjustImage(this)">&#9881; Auto Adjust Image</button>
                     <button class="settings-action-btn" onclick="showCamInfo()">&#128712; Camera Info</button>
                     <div class="settings-divider"></div>
                     <a href="ptz-control.htm" class="settings-action-btn" style="text-decoration:none; display:block;">&#127909; PTZ Control &amp; Presets</a>
@@ -1826,13 +1826,12 @@ function setDayNightLevel(level) {
 // ------------------------------------------------------------
 // AUTO ADJUST IMAGE (one-shot)
 // ------------------------------------------------------------
-function autoAdjustImage() {
+function autoAdjustImage(btn) {
     // Trigger one-touch auto focus
     fetch('/cam/cam?cmd=OSE:69:1&res=1').catch(function(){});
     // Enable auto iris temporarily
     fetch('/cam/ptz?cmd=%23D30&res=1').catch(function(){});
     // Flash feedback on the button
-    var btn = event.target;
     var orig = btn.textContent;
     btn.textContent = '\u2713 Adjusting...';
     btn.disabled = true;
@@ -2025,8 +2024,7 @@ function closeCamInfo() {
 // ------------------------------------------------------------
 // CAPTURE STILL IMAGE
 // ------------------------------------------------------------
-function captureStill() {
-    var btn = event.target;
+function captureStill(btn) {
     var orig = btn.innerHTML;
     btn.innerHTML = '&#128247; Capturing...';
     btn.disabled = true;

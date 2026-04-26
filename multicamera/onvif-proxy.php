@@ -18,7 +18,14 @@
 // ---- LOAD CONFIG ----
 
 $camerasFile = __DIR__ . '/config/cameras.json';
-$camerasData = json_decode(file_get_contents($camerasFile), true);
+$rawJson = @file_get_contents($camerasFile);
+if ($rawJson === false) {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode(['ok' => false, 'error' => 'cameras.json not found']);
+    exit;
+}
+$camerasData = json_decode($rawJson, true);
 $cameras = $camerasData['cameras'] ?? [];
 
 $credsFile = __DIR__ . '/config/onvif-credentials.php';
@@ -97,17 +104,18 @@ switch ($action) {
 // ============================================================
 
 function wsseHeader($user, $pass) {
-    $nonce   = random_bytes(16);
-    $created = gmdate('Y-m-d\TH:i:s\Z');
-    $digest  = base64_encode(sha1($nonce . $created . $pass, true));
+    $nonce    = random_bytes(16);
+    $created  = gmdate('Y-m-d\TH:i:s\Z');
+    $digest   = base64_encode(sha1($nonce . $created . $pass, true));
     $nonceB64 = base64_encode($nonce);
+    $userXml  = htmlspecialchars($user, ENT_XML1 | ENT_QUOTES);
 
     return <<<XML
     <s:Header>
       <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd"
                      xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
         <wsse:UsernameToken>
-          <wsse:Username>{$user}</wsse:Username>
+          <wsse:Username>{$userXml}</wsse:Username>
           <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordDigest">{$digest}</wsse:Password>
           <wsse:Nonce EncodingType="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary">{$nonceB64}</wsse:Nonce>
           <wsu:Created>{$created}</wsu:Created>
@@ -191,7 +199,10 @@ function proxySnapshot($ip, $snapshotPath, $user, $pass) {
         return;
     }
 
-    header('Content-Type: ' . ($contentType ?: 'image/jpeg'));
+    $allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    $safeType = in_array($contentType, $allowedTypes, true) ? $contentType : 'image/jpeg';
+
+    header('Content-Type: ' . $safeType);
     header('Cache-Control: no-cache, no-store');
     header('Content-Length: ' . strlen($data));
     echo $data;
@@ -204,9 +215,10 @@ function proxySnapshot($ip, $snapshotPath, $user, $pass) {
 function getPresets($ip, $user, $pass, $profileToken) {
     header('Content-Type: application/json');
 
+    $tokenXml = htmlspecialchars($profileToken, ENT_XML1 | ENT_QUOTES);
     $body = <<<XML
         <tptz:GetPresets>
-            <tptz:ProfileToken>{$profileToken}</tptz:ProfileToken>
+            <tptz:ProfileToken>{$tokenXml}</tptz:ProfileToken>
         </tptz:GetPresets>
 XML;
 
@@ -260,11 +272,12 @@ function gotoPreset($ip, $user, $pass, $profileToken, $preset) {
         return;
     }
 
+    $tokenXml  = htmlspecialchars($profileToken, ENT_XML1 | ENT_QUOTES);
     $presetSafe = htmlspecialchars($preset, ENT_XML1);
 
     $body = <<<XML
         <tptz:GotoPreset>
-            <tptz:ProfileToken>{$profileToken}</tptz:ProfileToken>
+            <tptz:ProfileToken>{$tokenXml}</tptz:ProfileToken>
             <tptz:PresetToken>{$presetSafe}</tptz:PresetToken>
             <tptz:Speed>
                 <tt:PanTilt x="1" y="1"/>
@@ -284,9 +297,10 @@ XML;
 function continuousMove($ip, $user, $pass, $profileToken, $pan, $tilt, $zoom) {
     header('Content-Type: application/json');
 
+    $tokenXml = htmlspecialchars($profileToken, ENT_XML1 | ENT_QUOTES);
     $body = <<<XML
         <tptz:ContinuousMove>
-            <tptz:ProfileToken>{$profileToken}</tptz:ProfileToken>
+            <tptz:ProfileToken>{$tokenXml}</tptz:ProfileToken>
             <tptz:Velocity>
                 <tt:PanTilt x="{$pan}" y="{$tilt}"/>
                 <tt:Zoom x="{$zoom}"/>
@@ -305,9 +319,10 @@ XML;
 function stopMove($ip, $user, $pass, $profileToken) {
     header('Content-Type: application/json');
 
+    $tokenXml = htmlspecialchars($profileToken, ENT_XML1 | ENT_QUOTES);
     $body = <<<XML
         <tptz:Stop>
-            <tptz:ProfileToken>{$profileToken}</tptz:ProfileToken>
+            <tptz:ProfileToken>{$tokenXml}</tptz:ProfileToken>
             <tptz:PanTilt>true</tptz:PanTilt>
             <tptz:Zoom>true</tptz:Zoom>
         </tptz:Stop>
