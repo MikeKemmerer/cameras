@@ -14,6 +14,9 @@ cameracontrol/sequences.json
 # User-specific preset definitions
 cameracontrol/presets.json
 
+# Site-specific camera config (contains real IPs)
+cameracontrol/config.json
+
 # ONVIF credentials (site-specific secrets)
 multicamera/config/onvif-credentials.php
 

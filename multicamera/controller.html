@@ -633,6 +633,14 @@ body {
       <div class="settings-divider"></div>
     </div>
     <button class="settings-action-btn" onclick="showCamInfo()">&#8505; Camera Info</button>
+    <div class="settings-divider"></div>
+    <div class="settings-group">
+      <span class="settings-group-label">Stream Source</span>
+      <div class="settings-seg" id="streamModeSeg">
+        <button onclick="setStreamMode('proxy')" id="streamProxyBtn">Proxied</button>
+        <button onclick="setStreamMode('direct')" id="streamDirectBtn">Direct</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -802,13 +810,14 @@ function initController() {
   CAM_TYPE = camCfg.type || 'panasonic';
 
   document.getElementById("camLabel").textContent = camCfg.name || cam;
+  updateStreamModeUI();
 
   /* Preview stream */
   if (CAM_TYPE === 'onvif') {
     refreshOnvifSnapshot();
     snapshotTimer = setInterval(refreshOnvifSnapshot, 500);
   } else {
-    document.getElementById("preview").src = `/multicamera/cam/${CAM_IP}/mjpeg?resolution=640x360&framerate=15&quality=1`;
+    applyStreamMode();
   }
 
   /* Hide Panasonic-specific controls for ONVIF */
@@ -1035,6 +1044,32 @@ document.addEventListener('click', e => {
     document.getElementById('settingsDropdown').classList.remove('open');
   }
 });
+
+/* ===== STREAM SOURCE TOGGLE ===== */
+function getStreamMode() {
+  return localStorage.getItem('streamMode') || 'proxy';
+}
+
+function setStreamMode(mode) {
+  localStorage.setItem('streamMode', mode);
+  applyStreamMode();
+  updateStreamModeUI();
+}
+
+function applyStreamMode() {
+  const preview = document.getElementById("preview");
+  if (getStreamMode() === 'direct') {
+    preview.src = `http://${CAM_IP}/cgi-bin/mjpeg?resolution=640x360&framerate=15&quality=1`;
+  } else {
+    preview.src = `/multicamera/cam/${CAM_IP}/mjpeg?resolution=640x360&framerate=15&quality=1`;
+  }
+}
+
+function updateStreamModeUI() {
+  const mode = getStreamMode();
+  document.getElementById('streamProxyBtn').classList.toggle('active', mode === 'proxy');
+  document.getElementById('streamDirectBtn').classList.toggle('active', mode === 'direct');
+}
 
 /* ===== SPEED SLIDER ===== */
 function onSpeedChange(idx) {
