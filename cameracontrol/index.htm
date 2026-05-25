@@ -545,9 +545,20 @@
         box-shadow: 0 0 10px var(--accent), 0 0 6px var(--accent) inset, 0 2px 4px rgba(0,0,0,0.6);
     }
 
+    /* Sequence controls row (skip + stop) */
+    .seq-controls {
+        display: none;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .seq-controls.visible {
+        display: flex;
+    }
+
     /* Global stop button */
     #globalStopBtn {
-        display: none;
         padding: 8px 16px;
         font-size: 14px;
         font-weight: 700;
@@ -569,10 +580,6 @@
 
     body.dark #globalStopBtn:hover {
         box-shadow: 0 0 10px #d64045, 0 0 6px #d64045 inset, 0 2px 4px rgba(0,0,0,0.6);
-    }
-
-    #globalStopBtn.visible {
-        display: inline-block;
     }
 
     @keyframes pulse-stop {
@@ -1154,7 +1161,7 @@
     <div class="header-left">
         <h2>Camera Presets</h2>
     </div>
-    <div class="header-right">        <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop Sequence</button>        <button onclick="captureStill(this)">&#128247; Capture</button>
+    <div class="header-right">        <button onclick="captureStill(this)">&#128247; Capture</button>
         <button onclick="showGallery()">&#128444; Gallery</button>
         <button onclick="switchToMJPEG()">MJPEG</button>
         <button onclick="switchToHLS()">HLS w/ &#128265;</button>
@@ -1218,6 +1225,14 @@
                     <button class="settings-action-btn" onclick="autoAdjustImage(this)">&#9881; Auto Adjust Image</button>
                     <button class="settings-action-btn" onclick="showCamInfo()">&#128712; Camera Info</button>
                     <div class="settings-divider"></div>
+                    <div class="settings-group">
+                        <span class="settings-group-label">Stream Source</span>
+                        <div class="settings-seg" id="streamModeSeg">
+                            <button id="streamProxyBtn" class="active" onclick="setStreamMode('proxy')">Proxied</button>
+                            <button id="streamDirectBtn" onclick="setStreamMode('direct')">Direct</button>
+                        </div>
+                    </div>
+                    <div class="settings-divider"></div>
                     <a href="ptz-control.htm" class="settings-action-btn" style="text-decoration:none; display:block;">&#127909; PTZ Control &amp; Presets</a>
                     <div class="settings-divider"></div>
                     <button class="settings-action-btn" onclick="startTutorial()">&#10067; Tutorial</button>
@@ -1240,7 +1255,10 @@
                 </div>
                 <div class="seq-steps-progress" id="seqStepsProgress"></div>
                 <div class="seq-countdown" id="seqCountdown"></div>
-                <div id="seqNextArea"></div>
+                <div class="seq-controls">
+                    <div id="seqNextArea"></div>
+                    <button id="globalStopBtn" onclick="stopSequence()">&#9632; Stop</button>
+                </div>
             </div>
             <div class="seq-grid" id="seqGrid"></div>
             </div>
@@ -1267,6 +1285,48 @@
 
 const LIVE_URL = "/mjpeg?resolution=640x360&framerate=15&quality=1";  // low-res, high-framerate preview
 const HLS_URL  = "/hls/2.m3u8";  // proxied HLS
+let CAMERA_IP = null;
+
+fetch('config.json', { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : null)
+    .then(cfg => {
+        if (cfg && cfg.camera_ip) {
+            CAMERA_IP = cfg.camera_ip;
+            // Re-apply direct mode now that we have the IP
+            if (getStreamMode() === 'direct') {
+                const img = document.getElementById('liveFeed');
+                if (img && img.style.display !== 'none') switchToMJPEG();
+            }
+        }
+    })
+    .catch(() => {});
+
+function getStreamMode() {
+    return localStorage.getItem('streamMode') || 'proxy';
+}
+
+function setStreamMode(mode) {
+    localStorage.setItem('streamMode', mode);
+    updateStreamModeUI();
+    // Re-apply if currently showing MJPEG
+    const img = document.getElementById('liveFeed');
+    if (img && img.style.display !== 'none') switchToMJPEG();
+}
+
+function getMjpegUrl() {
+    if (getStreamMode() === 'direct' && CAMERA_IP) {
+        return `http://${CAMERA_IP}/cgi-bin/mjpeg?resolution=640x360&framerate=15&quality=1`;
+    }
+    return LIVE_URL;
+}
+
+function updateStreamModeUI() {
+    const mode = getStreamMode();
+    const proxyBtn = document.getElementById('streamProxyBtn');
+    const directBtn = document.getElementById('streamDirectBtn');
+    if (proxyBtn) proxyBtn.classList.toggle('active', mode === 'proxy');
+    if (directBtn) directBtn.classList.toggle('active', mode === 'direct');
+}
 
 // ------------------------------------------------------------
 // LOAD PRESETS & BUILD GRID
@@ -1339,7 +1399,7 @@ function switchToMJPEG() {
     video.style.display = "none";
 
     img.style.display = "block";
-    img.src = LIVE_URL + "&t=" + Date.now(); // cache-bust to force reconnect
+    img.src = getMjpegUrl() + (getMjpegUrl().includes('?') ? '&' : '?') + "t=" + Date.now();
 }
 
 function switchToHLS() {
@@ -1587,7 +1647,7 @@ function launchSequence(seq, mode, steps) {
         timer: null
     };
 
-    document.getElementById('globalStopBtn').classList.add('visible');
+    document.querySelector('.seq-controls').classList.add('visible');
     const loopToggle = document.getElementById('seqLoopToggle');
     const loopCheckbox = document.getElementById('seqLoopCheckbox');
     if (mode === 'auto') {
@@ -1738,7 +1798,7 @@ function stopSequence() {
     }
     activeSequence = null;
 
-    document.getElementById('globalStopBtn').classList.remove('visible');
+    document.querySelector('.seq-controls').classList.remove('visible');
     document.getElementById('seqStatus').classList.remove('active');
     document.getElementById('seqNextArea').innerHTML = '';
     document.getElementById('seqCountdown').textContent = '';
@@ -1781,6 +1841,7 @@ loadSequences();
 
 // Start in MJPEG mode
 switchToMJPEG();
+updateStreamModeUI();
 
 // ------------------------------------------------------------
 // DAY / NIGHT MODE
@@ -2269,7 +2330,7 @@ var tutorialSteps = [
     },
     {
         title: 'Sequence Status',
-        text: 'When a sequence is running, this area shows the current step, countdown timer, and upcoming steps. Use the Loop checkbox to repeat automatically, or the Stop button in the header.',
+        text: 'When a sequence is running, this area shows the current step, countdown timer, and upcoming steps. Use the Loop checkbox to repeat automatically, Skip to advance, or Stop to end the sequence.',
         selector: '#seqStatus',
         setup: function() {
             closeSettingsDropdown();
