@@ -56,6 +56,25 @@ ProxyPassReverse /multicamera/cam/ http://CAMERA_4_IP/cgi-bin/aw_ptz
 
 
 # ============================================
+# CAMERA SETTINGS (aw_cam) — day/night, auto adjust, etc.
+# /multicamera/cam/<ip>/cam?... → http://<ip>/cgi-bin/aw_cam?...
+# ============================================
+
+ProxyPassMatch ^/multicamera/cam/([^/]+)/cam(.*)$ http://$1/cgi-bin/aw_cam$2
+ProxyPassReverse /multicamera/cam/ http://CAMERA_1_IP/cgi-bin/aw_cam
+ProxyPassReverse /multicamera/cam/ http://CAMERA_2_IP/cgi-bin/aw_cam
+ProxyPassReverse /multicamera/cam/ http://CAMERA_3_IP/cgi-bin/aw_cam
+ProxyPassReverse /multicamera/cam/ http://CAMERA_4_IP/cgi-bin/aw_cam
+
+# ============================================
+# CAMERA STATUS PAGE
+# /multicamera/cam/<ip>/status → http://<ip>/live/camdata.html
+# ============================================
+
+ProxyPassMatch ^/multicamera/cam/([^/]+)/status$ http://$1/live/camdata.html
+
+
+# ============================================
 # VIDEO SWITCHER
 # ============================================
 

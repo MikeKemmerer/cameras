@@ -22,6 +22,19 @@ Browser-based PTZ control for Panasonic AW-series cameras. Includes single-camer
 
 ## Setup
 
+Recommended — run the interactive installer (deps, deploy, vhost, configs):
+
+```bash
+sudo ./install.sh
+```
+
+It is idempotent and prompts for the camera IPs, encoder hostname, and switcher IP
+(reusing existing values on re-run). When stdin is not a TTY it runs
+non-interactively, reusing existing/seeded configs — this is how the
+church-monitoring restore flow drives it.
+
+Manual equivalent:
+
 ```bash
 sudo apt install apache2 php php-zip php-curl php-xml ffmpeg
 sudo a2enmod proxy proxy_http rewrite

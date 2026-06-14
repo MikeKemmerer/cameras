@@ -14,6 +14,20 @@ Browser-based PTZ camera control console for Panasonic AW-series cameras, with m
 
 ## Setup
 
+### Automated install (recommended)
+
+Run the interactive installer, which installs dependencies, deploys both web apps
+to `/var/www/html`, renders the Apache vhost, and writes the camera configs:
+
+```bash
+sudo ./install.sh
+```
+
+It prompts for the camera IPs, encoder hostname, and switcher IP, reusing existing
+values when re-run. It is idempotent and also runs non-interactively (reusing
+existing/seeded configs) when stdin is not a TTY. The manual steps below are the
+equivalent if you prefer to configure things by hand.
+
 ### Prerequisites
 
 **System packages:**
