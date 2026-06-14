@@ -38,39 +38,43 @@ Alias /multicamera "/var/www/html/multicamera"
 # ============================================
 # CAMERA MJPEG STREAMS
 # /multicamera/cam/<ip>/mjpeg → http://<ip>/cgi-bin/mjpeg
+# Only the four configured camera IPs are routable (no open-proxy).
 # ============================================
 
-ProxyPassMatch ^/multicamera/cam/([^/]+)/mjpeg$ http://$1/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPass /multicamera/cam/CAMERA_1_IP/mjpeg http://CAMERA_1_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPass /multicamera/cam/CAMERA_2_IP/mjpeg http://CAMERA_2_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPass /multicamera/cam/CAMERA_3_IP/mjpeg http://CAMERA_3_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPass /multicamera/cam/CAMERA_4_IP/mjpeg http://CAMERA_4_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
 
 # ============================================
 # CAMERA PTZ COMMANDS
-# /multicamera/cam/<ip>/ptz?... → http://<ip>/cgi-bin/ptz?...
+# /multicamera/cam/<ip>/ptz?... → http://<ip>/cgi-bin/aw_ptz?...
 # ============================================
 
-ProxyPassMatch ^/multicamera/cam/([^/]+)/ptz(.*)$ http://$1/cgi-bin/aw_ptz$2
-ProxyPassReverse /multicamera/cam/ http://CAMERA_1_IP/cgi-bin/aw_ptz
-ProxyPassReverse /multicamera/cam/ http://CAMERA_2_IP/cgi-bin/aw_ptz
-ProxyPassReverse /multicamera/cam/ http://CAMERA_3_IP/cgi-bin/aw_ptz
-ProxyPassReverse /multicamera/cam/ http://CAMERA_4_IP/cgi-bin/aw_ptz
-
+ProxyPass /multicamera/cam/CAMERA_1_IP/ptz http://CAMERA_1_IP/cgi-bin/aw_ptz
+ProxyPass /multicamera/cam/CAMERA_2_IP/ptz http://CAMERA_2_IP/cgi-bin/aw_ptz
+ProxyPass /multicamera/cam/CAMERA_3_IP/ptz http://CAMERA_3_IP/cgi-bin/aw_ptz
+ProxyPass /multicamera/cam/CAMERA_4_IP/ptz http://CAMERA_4_IP/cgi-bin/aw_ptz
 
 # ============================================
 # CAMERA SETTINGS (aw_cam) — day/night, auto adjust, etc.
 # /multicamera/cam/<ip>/cam?... → http://<ip>/cgi-bin/aw_cam?...
 # ============================================
 
-ProxyPassMatch ^/multicamera/cam/([^/]+)/cam(.*)$ http://$1/cgi-bin/aw_cam$2
-ProxyPassReverse /multicamera/cam/ http://CAMERA_1_IP/cgi-bin/aw_cam
-ProxyPassReverse /multicamera/cam/ http://CAMERA_2_IP/cgi-bin/aw_cam
-ProxyPassReverse /multicamera/cam/ http://CAMERA_3_IP/cgi-bin/aw_cam
-ProxyPassReverse /multicamera/cam/ http://CAMERA_4_IP/cgi-bin/aw_cam
+ProxyPass /multicamera/cam/CAMERA_1_IP/cam http://CAMERA_1_IP/cgi-bin/aw_cam
+ProxyPass /multicamera/cam/CAMERA_2_IP/cam http://CAMERA_2_IP/cgi-bin/aw_cam
+ProxyPass /multicamera/cam/CAMERA_3_IP/cam http://CAMERA_3_IP/cgi-bin/aw_cam
+ProxyPass /multicamera/cam/CAMERA_4_IP/cam http://CAMERA_4_IP/cgi-bin/aw_cam
 
 # ============================================
 # CAMERA STATUS PAGE
 # /multicamera/cam/<ip>/status → http://<ip>/live/camdata.html
 # ============================================
 
-ProxyPassMatch ^/multicamera/cam/([^/]+)/status$ http://$1/live/camdata.html
+ProxyPass /multicamera/cam/CAMERA_1_IP/status http://CAMERA_1_IP/live/camdata.html
+ProxyPass /multicamera/cam/CAMERA_2_IP/status http://CAMERA_2_IP/live/camdata.html
+ProxyPass /multicamera/cam/CAMERA_3_IP/status http://CAMERA_3_IP/live/camdata.html
+ProxyPass /multicamera/cam/CAMERA_4_IP/status http://CAMERA_4_IP/live/camdata.html
 
 
 # ============================================

@@ -104,17 +104,17 @@ EXISTING_CAM_CFG="$WEB_ROOT/multicamera/config/cameras.json"
 default_cam_ip() {
     local idx="$1"
     if [[ -f "$EXISTING_CAM_CFG" ]]; then
-        jq -r --arg i "$idx" '.cameras[$i].ip // empty' "$EXISTING_CAM_CFG" 2>/dev/null
+        jq -r --arg i "$idx" '.cameras[$i].ip // empty' "$EXISTING_CAM_CFG" 2>/dev/null || true
     fi
 }
 default_encoder() {
     if [[ -f "$VHOST_TARGET" ]]; then
-        grep -oP 'ProxyPass\s+/hls/\s+http://\K[^:/]+' "$VHOST_TARGET" 2>/dev/null | head -1
+        grep -oP 'ProxyPass\s+/hls/\s+http://\K[^:/]+' "$VHOST_TARGET" 2>/dev/null | head -1 || true
     fi
 }
 default_switcher() {
     if [[ -f "$VHOST_TARGET" ]]; then
-        grep -oP 'ProxyPass\s+/multicamera/switcher\s+http://\K[^/]+' "$VHOST_TARGET" 2>/dev/null | head -1
+        grep -oP 'ProxyPass\s+/multicamera/switcher\s+http://\K[^/]+' "$VHOST_TARGET" 2>/dev/null | head -1 || true
     fi
 }
 
@@ -141,7 +141,8 @@ done
 
 ask ENCODER_HOSTNAME "HLS encoder hostname/IP" "$(default_encoder)"
 [[ -z "$ENCODER_HOSTNAME" ]] && ENCODER_HOSTNAME="encoder"
-ask SWITCHER_IP "Video switcher IP (blank to omit)" "$(default_switcher)"
+ask SWITCHER_IP "Video switcher IP (- to omit)" "$(default_switcher)"
+[[ "$SWITCHER_IP" == "-" ]] && SWITCHER_IP=""
 
 # ── Step 4: Render the Apache vhost ──────────────────────────────────
 echo "==> Writing Apache vhost"
