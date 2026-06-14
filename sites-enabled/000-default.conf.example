@@ -41,7 +41,6 @@ Alias /multicamera "/var/www/html/multicamera"
 # ============================================
 
 ProxyPassMatch ^/multicamera/cam/([^/]+)/mjpeg$ http://$1/cgi-bin/mjpeg connectiontimeout=5 timeout=1
-ProxyPassReverse /multicamera/cam/ http://$1/cgi-bin/mjpeg
 
 # ============================================
 # CAMERA PTZ COMMANDS

@@ -47,6 +47,8 @@ ask() {
     if [[ $INTERACTIVE -eq 1 ]]; then
         read -r -p "$__prompt [$__default]: " __reply
         [[ -z "$__reply" ]] && __reply="$__default"
+        # Strip any embedded newlines to prevent config injection.
+        __reply="${__reply//$'\n'/}"
         printf -v "$__var" '%s' "$__reply"
     else
         printf -v "$__var" '%s' "$__default"
