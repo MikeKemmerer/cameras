@@ -32,6 +32,7 @@ This table summarizes every feature in this document and whether it's available 
 | Install position | ✅ | aw_ptz | `#INS0` / `#INS1` |
 | SD card recording | ✅ | sdctrl | `sdctrl?save=start\|end` |
 | Color bars | ✅ | aw_cam | `DCB:1` / `DCB:0` |
+| Day/Night (IR-cut filter) | ✅ | aw_ptz + aw_cam | `#D60` / `#D61` + `OSD:B2:0`; auto sensitivity `OSD:B7:<0-2>` |
 | ND filter | ❌ | — | Not on HE40 |
 | Preset time mode | ❌ | — | Not on HE40 (speed only) |
 | Green tally | ❌ | — | HE40 has red only |
@@ -100,9 +101,9 @@ In our setup, the web server running the camera control UI proxies requests to t
 
 | Proxy Path | Target |
 |------------|--------|
-| `/cam/ptz` | `http://172.25.0.200/cgi-bin/aw_ptz` |
-| `/cam/cam` | `http://172.25.0.200/cgi-bin/aw_cam` |
-| `/mjpeg` | `http://172.25.0.200/cgi-bin/mjpeg` |
+| `/cam/ptz` | `http://192.168.1.200/cgi-bin/aw_ptz` |
+| `/cam/cam` | `http://192.168.1.200/cgi-bin/aw_cam` |
+| `/mjpeg` | `http://192.168.1.200/cgi-bin/mjpeg` |
 
 ---
 
@@ -540,7 +541,7 @@ A virtual joystick for manual camera control would work by mapping pointer/touch
 In the multicamera setup, the same command can be sent to all four cameras by looping over their IPs using the existing dynamic proxy pattern. For example, to set all cameras to the same preset speed or power them all on before a service:
 
 ```javascript
-const cameraIPs = ['172.25.0.200', '172.25.0.201', '172.25.0.202', '172.25.0.203'];
+const cameraIPs = ['192.168.1.200', '192.168.1.201', '192.168.1.202', '192.168.1.203'];
 
 // Power on all cameras
 cameraIPs.forEach(ip => {
@@ -586,8 +587,8 @@ qSV3:x.xx             (firmware version)
 
 To fetch this through our proxy, you'd need a new proxy path or fetch it directly. In our Apache config, this could be added as:
 ```apache
-ProxyPass        /cam/status  http://172.25.0.200/live/camdata.html
-ProxyPassReverse /cam/status  http://172.25.0.200/live/camdata.html
+ProxyPass        /cam/status  http://192.168.1.200/live/camdata.html
+ProxyPassReverse /cam/status  http://192.168.1.200/live/camdata.html
 ```
 
 Then in JavaScript:
@@ -681,7 +682,7 @@ fetch('/cam/ptz?cmd=%23O&res=1', { signal: AbortSignal.timeout(3000) })
 
 For a multi-camera dashboard, run this against each camera IP:
 ```javascript
-const cameraIPs = ['172.25.0.200', '172.25.0.201', '172.25.0.202', '172.25.0.203'];
+const cameraIPs = ['192.168.1.200', '192.168.1.201', '192.168.1.202', '192.168.1.203'];
 
 async function checkAllCameras() {
     const results = await Promise.all(
@@ -706,7 +707,7 @@ In our setup, the Crestron video switcher (proxied at `/multicamera/switcher`) r
 The idea is straightforward: when you switch to camera N, send `#DA1` (tally on) to that camera and `#DA0` (tally off) to all the others. This could be added to the existing switcher button handler in the multicamera interface.
 
 ```javascript
-const cameraIPs = ['172.25.0.200', '172.25.0.201', '172.25.0.202', '172.25.0.203'];
+const cameraIPs = ['192.168.1.200', '192.168.1.201', '192.168.1.202', '192.168.1.203'];
 
 function routeAndTally(cameraIndex) {
     // Route camera to program output via Crestron switcher
@@ -727,10 +728,10 @@ routeAndTally(2);
 
 ## Camera Web UI Proxy
 
-The AW-HE40 has a built-in web interface for advanced configuration that's normally accessed by browsing directly to the camera's IP address. In our setup, this is proxied through `liturgystream2:8081`, so the camera's control page is available at:
+The AW-HE40 has a built-in web interface for advanced configuration that's normally accessed by browsing directly to the camera's IP address. In our setup, this is proxied through a port on the control server (`<control-server>:8081`), so the camera's control page is available at:
 
 ```
-http://liturgystream2:8081/live/index.html
+http://<control-server>:8081/live/index.html
 ```
 
 This built-in web UI provides access to settings that aren't available through the CGI commands, such as:
@@ -745,10 +746,10 @@ This built-in web UI provides access to settings that aren't available through t
 To link to the camera's web UI from the control page, or embed it in an iframe:
 ```html
 <!-- Link to camera's built-in admin page -->
-<a href="http://liturgystream2:8081/live/index.html" target="_blank">Camera Settings</a>
+<a href="http://<control-server>:8081/live/index.html" target="_blank">Camera Settings</a>
 
 <!-- Or embed in an iframe -->
-<iframe src="http://liturgystream2:8081/live/index.html" width="100%" height="600"></iframe>
+<iframe src="http://<control-server>:8081/live/index.html" width="100%" height="600"></iframe>
 ```
 
 > Note: The built-in web UI may require admin credentials for some settings. The CGI commands documented in this file do not require authentication.
@@ -793,13 +794,34 @@ XSF:4            → Load Scene File 4
 
 ### Day/Night Mode
 
-Some Panasonic PTZ cameras support an infrared night mode that removes the IR cut filter, allowing the camera to see in very low light (image becomes black-and-white). The HE40 may support this through the OSD menu system, though it's not exposed as a dedicated CGI command in the companion module. If available, it would typically be controlled through:
+The HE40 has an IR-cut filter, so it can switch to a night (black-and-white, IR-sensitive) mode for very low light. This isn't in the companion module, but the commands below were captured from the camera's own setup page (`setup_camera_detail.html`) and are verified on an AW-HE40; the control page uses them for its Day / Night / Auto switch.
 
+| Mode | aw_ptz | aw_cam |
+|------|--------|--------|
+| Day (IR-cut filter in, colour) | `#D60` | `OSD:B2:0` |
+| Night (IR-cut filter out, B/W) | `#D61` | `OSD:B2:0` |
+| Auto (camera switches by light level) | `#D61` | — |
+
+Auto-mode switching sensitivity, via **aw_cam**:
 ```
-OSE:xx:yy        → Day/night mode toggle (exact parameters model-dependent)
+OSD:B7:0         → Low
+OSD:B7:1         → Medium
+OSD:B7:2         → High
 ```
 
-This would need to be tested on the actual hardware or verified through the camera's web UI at `liturgystream2:8081/live/index.html`.
+```javascript
+fetch('/cam/ptz?cmd=%23D61&res=1');        // night (or auto)
+fetch('/cam/cam?cmd=OSD:B2:0&res=1');
+fetch('/cam/cam?cmd=OSD:B7:1&res=1');      // auto sensitivity: medium
+```
+
+### Quick Auto-Adjust
+
+A useful one-tap "fix the picture" combination is one-touch auto focus plus auto iris:
+```
+OSE:69:1  (aw_cam)   → one-touch auto focus
+#D30      (aw_ptz)   → auto iris on
+```
 
 ---
 
@@ -823,7 +845,7 @@ The camera outputs video in several formats simultaneously:
 |--------|-----|-------|
 | MJPEG | `/cgi-bin/mjpeg` | Low latency, no audio, moderate bandwidth |
 | RTSP | `rtsp://<camera-ip>/MediaInput/h264/stream_1` | H.264, full quality, includes audio |
-| HLS | Via external encoder | Not native to camera; our setup uses sdgocstream:8086 |
+| HLS | Via external encoder | Not native to camera; our setup uses an encoder on port 8086 |
 
 The MJPEG stream is what we use for live preview in the control UI. The RTSP stream is typically what feeds the encoder/recorder for the actual broadcast.
 

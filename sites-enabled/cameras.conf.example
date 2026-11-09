@@ -1,0 +1,93 @@
+# Camera control routes for the port-80 Apache site.
+#
+# install.sh renders this template to /etc/apache2/cameras/cameras.conf (regenerated on
+# every install/update; do not edit the rendered file) and adds this line inside the
+# site's <VirtualHost *:80> block:
+#
+#     Include /etc/apache2/cameras/cameras.conf
+#
+# The upper-case names below are filled in from the installer settings. Routes for
+# cameras beyond the configured count, and the video switcher routes when there is no
+# switcher, are left out. /var/www/html is replaced with WEB_ROOT.
+
+ProxyPreserveHost On
+ProxyRequests Off
+
+# ============================================
+# HLS stream encoder
+# ============================================
+ProxyPass        /hls/  http://ENCODER_HOSTNAME:8086/
+ProxyPassReverse /hls/  http://ENCODER_HOSTNAME:8086/
+
+# ============================================
+# Single-camera page (cameracontrol) -> camera 1
+# ============================================
+Alias /cameracontrol "/var/www/html/cameracontrol"
+<Directory "/var/www/html/cameracontrol">
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+
+ProxyPass        /mjpeg  http://CAMERA_1_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPassReverse /mjpeg  http://CAMERA_1_IP/cgi-bin/mjpeg
+
+ProxyPass        /cam/ptz  http://CAMERA_1_IP/cgi-bin/aw_ptz
+ProxyPassReverse /cam/ptz  http://CAMERA_1_IP/cgi-bin/aw_ptz
+
+ProxyPass        /cam/cam  http://CAMERA_1_IP/cgi-bin/aw_cam
+ProxyPassReverse /cam/cam  http://CAMERA_1_IP/cgi-bin/aw_cam
+
+# Camera status page (firmware, power, tally, focus mode, etc.)
+ProxyPass        /cam/status  http://CAMERA_1_IP/live/camdata.html
+ProxyPassReverse /cam/status  http://CAMERA_1_IP/live/camdata.html
+
+# Camera 1's own /live and /cgi-bin paths, used by the preview and preset recall.
+ProxyPass        /live  http://CAMERA_1_IP/live connectiontimeout=5 timeout=1
+ProxyPassReverse /live  http://CAMERA_1_IP/live
+
+ProxyPass        /cgi-bin  http://CAMERA_1_IP/cgi-bin
+ProxyPassReverse /cgi-bin  http://CAMERA_1_IP/cgi-bin
+
+# ============================================
+# Multi-camera dashboard
+# ============================================
+Alias /multicamera "/var/www/html/multicamera"
+<Directory "/var/www/html/multicamera">
+    Options FollowSymLinks
+    AllowOverride None
+    Require all granted
+</Directory>
+
+# Only the configured camera IPs are routable (no open proxy).
+# /multicamera/cam/<ip>/mjpeg -> http://<ip>/cgi-bin/mjpeg
+ProxyPass /multicamera/cam/CAMERA_1_IP/mjpeg http://CAMERA_1_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPass /multicamera/cam/CAMERA_2_IP/mjpeg http://CAMERA_2_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPass /multicamera/cam/CAMERA_3_IP/mjpeg http://CAMERA_3_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+ProxyPass /multicamera/cam/CAMERA_4_IP/mjpeg http://CAMERA_4_IP/cgi-bin/mjpeg connectiontimeout=5 timeout=1
+
+# /multicamera/cam/<ip>/ptz?... -> http://<ip>/cgi-bin/aw_ptz?...
+ProxyPass /multicamera/cam/CAMERA_1_IP/ptz http://CAMERA_1_IP/cgi-bin/aw_ptz
+ProxyPass /multicamera/cam/CAMERA_2_IP/ptz http://CAMERA_2_IP/cgi-bin/aw_ptz
+ProxyPass /multicamera/cam/CAMERA_3_IP/ptz http://CAMERA_3_IP/cgi-bin/aw_ptz
+ProxyPass /multicamera/cam/CAMERA_4_IP/ptz http://CAMERA_4_IP/cgi-bin/aw_ptz
+
+# /multicamera/cam/<ip>/cam?... -> http://<ip>/cgi-bin/aw_cam?... (day/night, auto adjust, etc.)
+ProxyPass /multicamera/cam/CAMERA_1_IP/cam http://CAMERA_1_IP/cgi-bin/aw_cam
+ProxyPass /multicamera/cam/CAMERA_2_IP/cam http://CAMERA_2_IP/cgi-bin/aw_cam
+ProxyPass /multicamera/cam/CAMERA_3_IP/cam http://CAMERA_3_IP/cgi-bin/aw_cam
+ProxyPass /multicamera/cam/CAMERA_4_IP/cam http://CAMERA_4_IP/cgi-bin/aw_cam
+
+# /multicamera/cam/<ip>/status -> http://<ip>/live/camdata.html
+ProxyPass /multicamera/cam/CAMERA_1_IP/status http://CAMERA_1_IP/live/camdata.html
+ProxyPass /multicamera/cam/CAMERA_2_IP/status http://CAMERA_2_IP/live/camdata.html
+ProxyPass /multicamera/cam/CAMERA_3_IP/status http://CAMERA_3_IP/live/camdata.html
+ProxyPass /multicamera/cam/CAMERA_4_IP/status http://CAMERA_4_IP/live/camdata.html
+
+# ============================================
+# Video switcher
+# ============================================
+ProxyPass        /multicamera/switcher http://SWITCHER_IP/
+ProxyPassReverse /multicamera/switcher http://SWITCHER_IP/
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet
