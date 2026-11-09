@@ -96,6 +96,22 @@ Place preset thumbnail images in `multicamera/thumbnails/<camera_number>/`. Pres
 - **Single camera control**: Open `multicamera/controller.html?cam=1`
 - **Legacy single-camera UI**: Open `cameracontrol/index.htm`
 
+## Camera Documentation
+
+- [AW-HE40-API-REFERENCE.md](cameracontrol/AW-HE40-API-REFERENCE.md) — Panasonic AW-HE40 CGI commands, including day/night (IR-cut) commands verified on the camera
+- [CAMERA-BRAND-COMPARISON.md](cameracontrol/CAMERA-BRAND-COMPARISON.md) — how other PTZ brands (PTZOptics, Sony, AVer, Marshall, ONVIF) would fit this UI, with a reference page for each
+- [cameracontrol/drivers/](cameracontrol/drivers/README.md) — groundwork VISCA encoder for a future second brand; not used by the UI and not deployed by `install.sh`
+
+## Releases
+
+`VERSION` holds the version being prepared. After a release is merged to `master`, push a
+SemVer tag such as `v1.0.0`; the **Publish Release** workflow checks it matches `VERSION`
+and publishes a GitHub release with a source tarball that includes `RELEASE.json`. Tags with
+a suffix such as `v1.1.0-rc.1` become prereleases.
+
+`install.sh` records the installed release, commit and time in
+`/etc/cameras/installed-version.json`.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

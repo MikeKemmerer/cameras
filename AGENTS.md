@@ -16,7 +16,9 @@ Browser-based PTZ control for Panasonic AW-series cameras. Includes single-camer
 
 - **No build tools** — plain HTML/CSS/JS served directly by Apache + PHP
 - **Config files**: JSON in `config/` or root (e.g., `presets.json`, `cameras.json`)
-- **Camera API**: Panasonic CGI commands — see [AW-HE40-API-REFERENCE.md](cameracontrol/AW-HE40-API-REFERENCE.md)
+- **Camera API**: Panasonic CGI commands — see [AW-HE40-API-REFERENCE.md](cameracontrol/AW-HE40-API-REFERENCE.md); other brands in [CAMERA-BRAND-COMPARISON.md](cameracontrol/CAMERA-BRAND-COMPARISON.md)
+- **Releases**: `VERSION` + `v*` tags; `.github/workflows/release.yml` publishes; `install.sh` writes `/etc/cameras/installed-version.json`
+- **Docs**: no real IPs or host names — use `192.168.1.x` / `<control-server>` placeholders
 - **PHP**: Minimal endpoints, no frameworks, server-side validation only
 - **Apache**: Requires `mod_proxy`, `mod_rewrite`, `php-zip`, `ffmpeg`
 

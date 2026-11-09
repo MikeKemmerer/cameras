@@ -18,6 +18,8 @@
 #   CAMERA_1_IP .. CAMERA_4_IP   Panasonic camera IPs
 #   CAMERA_COUNT       Number of Panasonic cameras (1-4, default 4)
 #   WEB_ROOT           Deploy directory (default /var/www/html)
+#
+# Records the installed release in /etc/cameras/installed-version.json.
 
 set -euo pipefail
 
@@ -25,6 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WEB_ROOT="${WEB_ROOT:-/var/www/html}"
 VHOST_EXAMPLE="$SCRIPT_DIR/sites-enabled/000-default.conf.example"
 VHOST_TARGET="/etc/apache2/sites-available/000-default.conf"
+VERSION_MANIFEST="/etc/cameras/installed-version.json"
 
 if [[ $EUID -ne 0 ]]; then
     echo "Error: this installer must be run as root (use sudo)." >&2
@@ -80,6 +83,7 @@ DEPLOY_EXCLUDES=(
     --exclude='images/'
     --exclude='captures/'
     --exclude='thumbnails/'
+    --exclude='drivers/'
 )
 rsync -a "${DEPLOY_EXCLUDES[@]}" "$SCRIPT_DIR/cameracontrol/" "$WEB_ROOT/cameracontrol/"
 rsync -a "${DEPLOY_EXCLUDES[@]}" "$SCRIPT_DIR/multicamera/" "$WEB_ROOT/multicamera/"
@@ -184,8 +188,24 @@ a2ensite 000-default >/dev/null 2>&1 || true
 apache2ctl configtest
 systemctl reload apache2
 
+# ── Step 7: Record the installed release ─────────────────────────────
+# Release tarballs carry RELEASE.json; a git checkout falls back to VERSION + HEAD.
+VERSION=$(tr -d '\r\n' < "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "unknown")
+TAG="v$VERSION"
+COMMIT=$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null || echo "unknown")
+if [[ -r "$SCRIPT_DIR/RELEASE.json" ]]; then
+    VERSION=$(jq -r '.version // empty' "$SCRIPT_DIR/RELEASE.json")
+    TAG=$(jq -r '.tag // empty' "$SCRIPT_DIR/RELEASE.json")
+    COMMIT=$(jq -r '.commit // empty' "$SCRIPT_DIR/RELEASE.json")
+fi
+install -d -m 755 "$(dirname "$VERSION_MANIFEST")"
+jq -n --arg version "${VERSION:-unknown}" --arg tag "${TAG:-unknown}" --arg commit "${COMMIT:-unknown}" \
+    --arg installed_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{version: $version, tag: $tag, commit: $commit, installed_at: $installed_at}' > "$VERSION_MANIFEST"
+chmod 644 "$VERSION_MANIFEST"
+
 echo ""
-echo "Done. Camera control suite installed."
+echo "Done. Camera control suite installed ($TAG)."
 echo "  Single camera:  http://localhost/cameracontrol/"
 echo "  Multi camera:   http://localhost/multicamera/"
 echo "  Apache vhost:   $VHOST_TARGET"
