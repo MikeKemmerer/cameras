@@ -10,7 +10,7 @@ Browser-based PTZ control for Panasonic AW-series cameras. Includes single-camer
 |-----------|---------|
 | `cameracontrol/` | Single-camera UI: presets, sequences, captures, PTZ |
 | `multicamera/` | Multi-camera dashboard with per-camera controller iframes |
-| `sites-enabled/` | Apache vhost configs (reverse proxy to cameras/encoders) |
+| `sites-enabled/` | Apache templates: `cameras.conf.example` (routes, included from the port-80 site) and `cameras-webui.conf.example` |
 
 ## Key Conventions
 
@@ -31,9 +31,11 @@ sudo ./install.sh
 ```
 
 It is idempotent and prompts for the camera IPs, encoder hostname, and switcher IP
-on a first install. On an existing install it only deploys code: the Apache vhost and
-all site configs are kept (`--reconfigure` merges new settings into the JSON configs;
-`--rewrite-vhost` replaces the vhost with backup + automatic rollback). When stdin is
+on a first install. On an existing install it deploys code and regenerates
+`/etc/apache2/cameras/cameras.conf`; site configs are kept (`--reconfigure` merges new
+settings into the JSON configs). Apache: the installer owns `cameras.conf` and
+`cameras-webui.conf` and only adds one `Include` line to `000-default.conf`; any
+change is rolled back if `apache2ctl configtest` fails. When stdin is
 not a TTY it runs non-interactively, reusing existing/seeded configs — this is how the
 church-monitoring restore flow drives it.
 
@@ -42,7 +44,8 @@ Manual equivalent:
 ```bash
 sudo apt install apache2 php php-zip php-curl php-xml ffmpeg
 sudo a2enmod proxy proxy_http rewrite
-# Copy sites-enabled/000-default.conf.example → 000-default.conf and configure
+# Copy sites-enabled/cameras.conf.example → /etc/apache2/cameras/cameras.conf, fill in, and
+#   add "Include /etc/apache2/cameras/cameras.conf" inside <VirtualHost *:80>
 # Copy cameracontrol/presets.example.json → presets.json
 # Copy multicamera/config/cameras.example.json → cameras.json
 ```

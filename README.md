@@ -17,25 +17,45 @@ Browser-based PTZ camera control console for Panasonic AW-series cameras, with m
 ### Automated install (recommended)
 
 Run the interactive installer, which installs dependencies, deploys both web apps
-to `/var/www/html`, renders the Apache vhost, and writes the camera configs:
+to `/var/www/html`, sets up the Apache camera routes, and writes the camera configs:
 
 ```bash
 sudo ./install.sh
 ```
 
-It prompts for the camera IPs, encoder hostname, and switcher IP, then writes the
-Apache vhost and camera configs. The manual steps below are the equivalent if you
+It prompts for the camera IPs, encoder hostname, switcher IP, and the port for the
+camera's own web admin page. The manual steps below are the equivalent if you
 prefer to configure things by hand.
 
-**Updating** — re-running `sudo ./install.sh` on an existing install only deploys the
-new web app files. The Apache vhost, camera configs, presets, sequences, per-camera
-preset files, captures and credentials are never overwritten.
+**Apache** — the installer doesn't rewrite your site config. All camera routes live in
+`/etc/apache2/cameras/cameras.conf`, which the installer owns and regenerates on every
+run. The port-80 site (`000-default.conf`) only gets one line inside its
+`<VirtualHost *:80>` block, added once and checked on every run:
+
+```apache
+Include /etc/apache2/cameras/cameras.conf
+```
+
+The camera's web admin page is proxied by its own site,
+`/etc/apache2/sites-available/cameras-webui.conf` (default port 8081). Every Apache
+change is checked with `apache2ctl configtest`; if Apache rejects it, all of the
+installer's Apache changes are rolled back. The settings behind these files are
+saved in `/etc/cameras/settings.json`.
+
+**Updating** — re-running `sudo ./install.sh` deploys the new web app files and
+regenerates `cameras.conf` from the saved settings. Camera configs, presets, sequences,
+per-camera preset files, captures and credentials are never overwritten.
 
 | Command | What it changes |
 |---------|-----------------|
-| `sudo ./install.sh` | Code only (on an existing install) |
-| `sudo ./install.sh --reconfigure` | Re-asks the settings and merges the camera IPs into the existing JSON configs (names, extra/ONVIF cameras and other keys are kept; backups are made). The vhost is left alone; the template rendered with the new settings is written to `000-default.conf.cameras-new` for comparison |
-| `sudo ./install.sh --rewrite-vhost` | Replaces the Apache vhost from the template; the old one is backed up and restored automatically if Apache rejects the new one |
+| `sudo ./install.sh` | Code + `cameras.conf` (on an existing install, no questions asked) |
+| `sudo ./install.sh --reconfigure` | Re-asks the settings, merges the camera IPs into the existing JSON configs (names, extra/ONVIF cameras and other keys are kept; backups are made) and regenerates the Apache files |
+
+Installs made before `cameras.conf` existed are moved over by the next update: the
+settings are read from the existing configs and site, `cameras.conf` is written and the
+`Include` line added. Camera routes still written directly in `000-default.conf` come
+before the `Include` and keep working until they are commented out; the installer
+points them out.
 
 It runs non-interactively (reusing existing values) when stdin is not a TTY.
 
@@ -89,13 +109,18 @@ Edit `cameras.json` with your camera addresses:
 
 ### 2. Apache Reverse Proxy
 
-Copy and edit the example Apache config:
+Copy the routes template, replace the placeholders (`CAMERA_1_IP`, `ENCODER_HOSTNAME`,
+`SWITCHER_IP`, etc.) and include it from your port-80 site:
 
 ```bash
-cp sites-enabled/000-default.conf.example sites-enabled/000-default.conf
+sudo install -d /etc/apache2/cameras
+sudo cp sites-enabled/cameras.conf.example /etc/apache2/cameras/cameras.conf
+# then, inside <VirtualHost *:80> in /etc/apache2/sites-available/000-default.conf:
+#     Include /etc/apache2/cameras/cameras.conf
 ```
 
-Replace all placeholder IPs (`CAMERA_1_IP`, `ENCODER_HOSTNAME`, `SWITCHER_IP`, etc.) with your real infrastructure addresses.
+For the camera's web admin page, do the same with `sites-enabled/cameras-webui.conf.example`
+(as `/etc/apache2/sites-available/cameras-webui.conf`, then `sudo a2ensite cameras-webui`).
 
 ### 3. Preset Thumbnails
 

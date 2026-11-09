@@ -1,0 +1,16 @@
+# Camera 1's built-in web admin page on its own port (optional).
+#
+# install.sh renders this to /etc/apache2/sites-available/cameras-webui.conf and enables
+# it when a web admin port is configured. The Listen line is left out when that port
+# is already declared elsewhere (for example in ports.conf).
+
+Listen WEBUI_PORT
+
+<VirtualHost *:WEBUI_PORT>
+    ProxyPreserveHost On
+    ProxyRequests Off
+    ProxyPass        /  http://CAMERA_1_IP/ connectiontimeout=5 timeout=1
+    ProxyPassReverse /  http://CAMERA_1_IP/
+</VirtualHost>
+
+# vim: syntax=apache ts=4 sw=4 sts=4 sr noet
