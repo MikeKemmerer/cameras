@@ -126,7 +126,7 @@ declare -a CAM_IPS=()
 for i in $(seq 1 "$CAMERA_COUNT"); do
     var="CAMERA_${i}_IP"
     def="$(default_cam_ip "$i")"
-    [[ -z "$def" ]] && def="172.25.0.$((199 + i))"
+    [[ -z "$def" ]] && def="192.168.1.$((199 + i))"
     ask "$var" "Camera $i IP address" "$def"
     CAM_IPS[$i]="${!var}"
 done
