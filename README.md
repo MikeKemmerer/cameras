@@ -23,10 +23,21 @@ to `/var/www/html`, renders the Apache vhost, and writes the camera configs:
 sudo ./install.sh
 ```
 
-It prompts for the camera IPs, encoder hostname, and switcher IP, reusing existing
-values when re-run. It is idempotent and also runs non-interactively (reusing
-existing/seeded configs) when stdin is not a TTY. The manual steps below are the
-equivalent if you prefer to configure things by hand.
+It prompts for the camera IPs, encoder hostname, and switcher IP, then writes the
+Apache vhost and camera configs. The manual steps below are the equivalent if you
+prefer to configure things by hand.
+
+**Updating** — re-running `sudo ./install.sh` on an existing install only deploys the
+new web app files. The Apache vhost, camera configs, presets, sequences, per-camera
+preset files, captures and credentials are never overwritten.
+
+| Command | What it changes |
+|---------|-----------------|
+| `sudo ./install.sh` | Code only (on an existing install) |
+| `sudo ./install.sh --reconfigure` | Re-asks the settings and merges the camera IPs into the existing JSON configs (names, extra/ONVIF cameras and other keys are kept; backups are made). The vhost is left alone; the template rendered with the new settings is written to `000-default.conf.cameras-new` for comparison |
+| `sudo ./install.sh --rewrite-vhost` | Replaces the Apache vhost from the template; the old one is backed up and restored automatically if Apache rejects the new one |
+
+It runs non-interactively (reusing existing values) when stdin is not a TTY.
 
 ### Prerequisites
 

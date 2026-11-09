@@ -31,8 +31,10 @@ sudo ./install.sh
 ```
 
 It is idempotent and prompts for the camera IPs, encoder hostname, and switcher IP
-(reusing existing values on re-run). When stdin is not a TTY it runs
-non-interactively, reusing existing/seeded configs — this is how the
+on a first install. On an existing install it only deploys code: the Apache vhost and
+all site configs are kept (`--reconfigure` merges new settings into the JSON configs;
+`--rewrite-vhost` replaces the vhost with backup + automatic rollback). When stdin is
+not a TTY it runs non-interactively, reusing existing/seeded configs — this is how the
 church-monitoring restore flow drives it.
 
 Manual equivalent:
